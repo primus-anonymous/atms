@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <PreferenceCategory android:title="@string/settings_category_app">
+
+        <ListPreference
+            android:defaultValue="google"
+            android:entries="@array/map_types"
+            android:entryValues="@array/map_types_value"
+            android:key="key_map_type"
+            android:summary="@string/settings_map_summary"
+            android:title="@string/settings_map_title" />
+
+    </PreferenceCategory>
+
+    <PreferenceCategory android:title="@string/settings_category_common">
+        <PreferenceScreen android:title="@string/settings_rate_title">
+
+            <intent
+                android:action="android.intent.action.VIEW"
+                android:data="market://details?id=com.neocaptainnemo.testing" />
+
+        </PreferenceScreen>
+
+        <PreferenceScreen
+            android:key="summary"
+            android:summary="@string/settings_rate_about_summary"
+            android:title="@string/settings_rate_about" />
+
+    </PreferenceCategory>
+
+</PreferenceScreen>

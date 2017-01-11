@@ -1,3 +1,36 @@
 <resources>
-    <string name="app_name">Testing</string>
+    <string name="app_name">Банкоматы</string>
+    <string name="item_bn_maps">На карте</string>
+    <string name="item_bn_list">Списком</string>
+    <string name="item_bn_settings">Настройки</string>
+
+    <string-array name="map_types">
+        <item>Google Maps</item>
+        <item>Яндекс Карты</item>
+    </string-array>
+    <string-array name="map_types_value">
+        <item>google</item>
+        <item>yandex</item>
+    </string-array>
+
+    <string name="settings_map_title">Карта</string>
+    <string name="settings_map_summary">Выбери тип карты использемый в приложении</string>
+    <string name="settings_category_app">Приложение</string>
+    <string name="settings_category_common">Общие</string>
+    <string name="settings_rate_title">Оцени нас в Google Play</string>
+    <string name="settings_rate_about">О приложении</string>
+    <string name="settings_rate_about_summary" formatted="false">Версия %s (%d)</string>
+    <string name="please_zoom_further">Ничего не вижу, давай ближе!</string>
+    <string name="no_address">Адрес не доступен :(</string>
+    <string name="distance_m">%.0f м</string>
+    <string name="distance_km">%.2f км</string>
+    <string name="search_title">Фильтровать по имени</string>
+    <string name="search_hint">Фильтровать по имени</string>
+    <string name="atm_empty">Банкоматов не найдено :(</string>
+    <string name="distance_m_from_you">(%s по прямой)</string>
+    <string name="distance_km_from_you">(%s по прямой)</string>
+    <string name="choose_the_nav_way">До банкомата...</string>
+    <string name="nav_walk">пойдем пешком</string>
+    <string name="nav_drive">поедем на машине</string>
+
 </resources>

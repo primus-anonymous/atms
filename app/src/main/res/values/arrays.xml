@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string-array name="nav_way_array">
+        <item>@string/nav_walk</item>
+        <item>@string/nav_drive</item>
+    </string-array>
+</resources>
