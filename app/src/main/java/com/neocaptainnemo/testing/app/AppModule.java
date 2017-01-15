@@ -1,4 +1,4 @@
-package com.neocaptainnemo.testing.di;
+package com.neocaptainnemo.testing.app;
 
 import android.app.Application;
 import android.content.Context;

@@ -55,10 +55,11 @@ public class Presenter {
 
         if (viewPortBounds == null || !viewPortBounds.isInside(viewPort)) {
 
-            view.onStartGettingAtsm();
-            observable = atms.request(viewPort).cache()
+            observable = atms
+                    .request(viewPort)
+                    .cache()
                     .doOnNext(atmNodes -> viewPortBounds = viewPort)
-                    .doOnError((throwable) -> viewPortBounds = null);
+                    .doOnError(throwable -> viewPortBounds = null);
 
             doFetch();
         }
@@ -68,6 +69,7 @@ public class Presenter {
         if (atmsSubscription != null && !atmsSubscription.isUnsubscribed()) {
             atmsSubscription.unsubscribe();
         }
+        view.showProgress();
         atmsSubscription = observable
                 .map(atmNodes -> {
                     if (filterStr.isEmpty()) {
@@ -89,8 +91,9 @@ public class Presenter {
                 .observeOn(observe)
                 .subscribe(atmNodes -> {
                     view.onGotAtms(atmNodes);
+                    view.hideProgress();
                 }, throwable -> {
-                    view.onAtmsFailed();
+                    view.hideProgress();
                 });
     }
 

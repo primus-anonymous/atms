@@ -1,5 +1,6 @@
-package com.neocaptainnemo.testing.di;
+package com.neocaptainnemo.testing.app;
 
+import com.neocaptainnemo.testing.service.ServiceModule;
 import com.neocaptainnemo.testing.ui.MainActivity;
 import com.neocaptainnemo.testing.ui.list.ListFragment;
 

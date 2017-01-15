@@ -5,7 +5,7 @@ import com.neocaptainnemo.testing.model.AtmNode;
 
 import java.util.List;
 
-class OsmResponse {
+public class OsmResponse {
 
     @SerializedName("elements")
     private List<AtmNode> atms;

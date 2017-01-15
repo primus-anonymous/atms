@@ -2,8 +2,11 @@ package com.neocaptainnemo.testing.ui;
 
 import android.content.Context;
 
+import com.google.gson.Gson;
+import com.neocaptainnemo.testing.model.AtmNode;
 import com.neocaptainnemo.testing.model.ViewPort;
 import com.neocaptainnemo.testing.service.Atms;
+import com.neocaptainnemo.testing.service.OsmResponse;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -11,10 +14,17 @@ import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
 
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+
 import rx.Observable;
 import rx.schedulers.Schedulers;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -32,17 +42,121 @@ public class PresenterTest {
 
     @Before
     public void before() {
-        presenter = new Presenter(context, atms, Schedulers.test(), Schedulers.test());
+        presenter = new Presenter(context, atms, Schedulers.immediate(), Schedulers.immediate());
         presenter.setView(view);
     }
 
     @Test
-    public void fetch() {
+    public void fetchFirstTime() {
 
-        when(atms.request(any())).thenReturn(Observable.empty());
+        when(atms.request(any())).thenReturn(Observable.just(Collections.emptyList()));
 
         presenter.fetchAtms(new ViewPort(1, 1, 1, 1));
 
-        verify(view).onStartGettingAtsm();
+        verify(view).showProgress();
     }
+
+    @Test
+    public void fetchInsideCachedViewport() {
+
+        when(atms.request(any())).thenReturn(Observable.just(Collections.emptyList()));
+
+        presenter.fetchAtms(new ViewPort(1, 1, 1, 1));
+        presenter.fetchAtms(new ViewPort(1, 1, 1, 1));
+
+        verify(view, times(1)).showProgress();
+    }
+
+    @Test
+    public void fetchOutsideCachedViewport() {
+
+        when(atms.request(any())).thenReturn(Observable.just(Collections.emptyList()));
+
+        presenter.fetchAtms(new ViewPort(1, 1, 1, 1));
+        presenter.fetchAtms(new ViewPort(1, 1, 2, 1));
+
+        verify(view, times(2)).showProgress();
+    }
+
+    @Test
+    public void fetchErrorInBetween() {
+
+        when(atms.request(any())).thenReturn(Observable.just(Collections.emptyList()));
+        presenter.fetchAtms(new ViewPort(1, 1, 1, 1));
+
+        when(atms.request(any())).thenReturn(Observable.error(new Exception()));
+        presenter.fetchAtms(new ViewPort(1, 1, 2, 1));
+
+        when(atms.request(any())).thenReturn(Observable.just(Collections.emptyList()));
+        presenter.fetchAtms(new ViewPort(1, 1, 1, 1));
+
+        verify(view, times(3)).showProgress();
+    }
+
+    @Test
+    public void fetchSuccess() {
+        when(atms.request(any())).thenReturn(Observable.just(Collections.emptyList()));
+        presenter.fetchAtms(new ViewPort(1, 1, 1, 1));
+
+        verify(view).onGotAtms(Collections.emptyList());
+    }
+
+    @Test
+    public void fetchError() {
+        when(atms.request(any())).thenReturn(Observable.error(new Exception()));
+        presenter.fetchAtms(new ViewPort(1, 1, 1, 1));
+
+        verify(view).hideProgress();
+    }
+
+    @Test
+    public void fetchSuccessNoFilter() {
+
+        OsmResponse response = getOsmResponse();
+
+        when(atms.request(any())).thenReturn(Observable.just(response.getAtms()));
+
+        presenter.fetchAtms(new ViewPort(1, 1, 1, 1));
+        verify(view).onGotAtms(response.getAtms());
+    }
+
+    @Test
+    public void fetchSuccessFilterResults() {
+
+        OsmResponse response = getOsmResponse();
+
+        when(atms.request(any())).thenReturn(Observable.just(response.getAtms()));
+
+        presenter.fetchAtms(new ViewPort(1, 1, 1, 1));
+        presenter.setFilter("B SEB");
+
+        AtmNode atmNode = new AtmNode();
+        atmNode.setId(325105300);
+        List<AtmNode> expected = new ArrayList<>();
+        expected.add(atmNode);
+
+        verify(view).onGotAtms(expected);
+    }
+
+    @Test
+    public void fetchSuccessFilterNoResults() {
+
+        OsmResponse response = getOsmResponse();
+
+        when(atms.request(any())).thenReturn(Observable.just(response.getAtms()));
+
+        presenter.fetchAtms(new ViewPort(1, 1, 1, 1));
+        presenter.setFilter("B SEB!2");
+
+        verify(view).onGotAtms(Collections.emptyList());
+    }
+
+    private OsmResponse getOsmResponse() {
+        InputStream stream = ClassLoader.getSystemResourceAsStream("response.json");
+
+        InputStreamReader reader = new InputStreamReader(stream);
+        return new Gson().fromJson(reader, OsmResponse.class);
+    }
+
+
 }

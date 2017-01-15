@@ -13,8 +13,8 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 
-import com.neocaptainnemo.testing.App;
 import com.neocaptainnemo.testing.R;
+import com.neocaptainnemo.testing.app.App;
 import com.neocaptainnemo.testing.databinding.FragmentListBinding;
 import com.neocaptainnemo.testing.model.AtmNode;
 

@@ -43,6 +43,22 @@ public class AtmNode implements Parcelable, ClusterItem {
         tags = in.readParcelable(Tag.class.getClassLoader());
     }
 
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        AtmNode atmNode = (AtmNode) o;
+
+        return id == atmNode.id;
+
+    }
+
+    @Override
+    public int hashCode() {
+        return (int) (id ^ (id >>> 32));
+    }
+
     public double getLat() {
         return lat;
     }
@@ -74,6 +90,10 @@ public class AtmNode implements Parcelable, ClusterItem {
 
     public long getId() {
         return id;
+    }
+
+    public void setId(long id) {
+        this.id = id;
     }
 
     @Override

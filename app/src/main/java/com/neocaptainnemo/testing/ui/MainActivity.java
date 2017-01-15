@@ -30,8 +30,8 @@ import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.maps.android.SphericalUtil;
-import com.neocaptainnemo.testing.App;
 import com.neocaptainnemo.testing.R;
+import com.neocaptainnemo.testing.app.App;
 import com.neocaptainnemo.testing.databinding.ActivityMainBinding;
 import com.neocaptainnemo.testing.model.AtmNode;
 import com.neocaptainnemo.testing.model.ViewPort;
@@ -326,17 +326,15 @@ public class MainActivity extends AppCompatActivity implements BottomNavigationV
         if (listView != null) {
             listView.showAtms(atmNodes);
         }
-
-        binding.progress.setVisibility(View.GONE);
     }
 
     @Override
-    public void onStartGettingAtsm() {
+    public void showProgress() {
         binding.progress.setVisibility(View.VISIBLE);
     }
 
     @Override
-    public void onAtmsFailed() {
+    public void hideProgress() {
         binding.progress.setVisibility(View.GONE);
     }
 

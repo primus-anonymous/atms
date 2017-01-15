@@ -1,0 +1,223 @@
+{
+  "version": 0.6,
+  "generator": "Overpass API",
+  "osm3s": {
+    "timestamp_osm_base": "2017-01-13T14:31:02Z",
+    "copyright": "The data included in this document is from www.openstreetmap.org. The data is made available under ODbL."
+  },
+  "elements": [
+
+{
+  "type": "node",
+  "id": 273474581,
+  "lat": 54.6759048,
+  "lon": 25.2514369,
+  "tags": {
+    "amenity": "bank",
+    "atm": "yes",
+    "created_by": "Potlatch 0.9c",
+    "name": "Swedbank",
+    "operator": "Swedbank"
+  }
+},
+{
+  "type": "node",
+  "id": 325105300,
+  "lat": 54.6865599,
+  "lon": 25.2810277,
+  "tags": {
+    "addr:city": "Vilnius",
+    "addr:housenumber": "12",
+    "addr:postcode": "01103",
+    "addr:street": "Gedimino pr.",
+    "amenity": "bank",
+    "atm": "yes",
+    "drive_through": "no",
+    "name": "AB SEB Bankas",
+    "opening_hours": "Mo-Th 08:00-17:00; Fr 08:00-16:00",
+    "operator": "SEB",
+    "website": "http://www.seb.lt"
+  }
+},
+{
+  "type": "node",
+  "id": 614700820,
+  "lat": 54.7046568,
+  "lon": 25.3107941,
+  "tags": {
+    "amenity": "bank",
+    "atm": "yes",
+    "name": "SEB",
+    "operator": "SEB"
+  }
+},
+{
+  "type": "node",
+  "id": 695824586,
+  "lat": 54.6700417,
+  "lon": 25.2831494,
+  "tags": {
+    "addr:city": "Vilnius",
+    "addr:country": "LT",
+    "addr:housenumber": "6",
+    "addr:street": "Geležinkelio g.",
+    "amenity": "bank",
+    "atm": "yes",
+    "name": "Citadele bankas",
+    "opening_hours": "24/7"
+  }
+},
+{
+  "type": "node",
+  "id": 837674976,
+  "lat": 54.6708724,
+  "lon": 25.2596709,
+  "tags": {
+    "amenity": "bank",
+    "atm": "no",
+    "name": "SEB Naugarduko skyrius",
+    "opening_hours": "Mo-Fr 09:00-18:00",
+    "operator": "SEB"
+  }
+},
+{
+  "type": "node",
+  "id": 963655688,
+  "lat": 54.6817128,
+  "lon": 25.2893334,
+  "tags": {
+    "addr:city": "Vilnius",
+    "addr:country": "LT",
+    "addr:housenumber": "36",
+    "addr:street": "Pilies g.",
+    "amenity": "bank",
+    "atm": "yes",
+    "name": "DNB",
+    "operator": "DNB"
+  }
+},
+{
+  "type": "node",
+  "id": 963774634,
+  "lat": 54.6792630,
+  "lon": 25.2871050,
+  "tags": {
+    "amenity": "pub",
+    "atm": "no",
+    "food": "yes",
+    "internet_access": "wlan",
+    "name": "Amatininkai",
+    "opening_hours": "10:00-05:00",
+    "smoking": "outside",
+    "wheelchair": "limited"
+  }
+},
+{
+  "type": "node",
+  "id": 1075469034,
+  "lat": 54.6708954,
+  "lon": 25.2818664,
+  "tags": {
+    "amenity": "bank",
+    "atm": "yes",
+    "name": "Medicinos bankas"
+  }
+},
+{
+  "type": "node",
+  "id": 1516018826,
+  "lat": 54.6793214,
+  "lon": 25.2576853,
+  "tags": {
+    "addr:city": "Vilnius",
+    "addr:country": "LT",
+    "addr:housenumber": "4",
+    "addr:street": "S. Konarskio g.",
+    "amenity": "bank",
+    "atm": "yes",
+    "name": "SEB"
+  }
+},
+{
+  "type": "node",
+  "id": 1994940767,
+  "lat": 54.6799598,
+  "lon": 25.2828924,
+  "tags": {
+    "addr:city": "Vilnius",
+    "addr:housenumber": "26",
+    "addr:postcode": "01130",
+    "addr:street": "Vokiečių g.",
+    "amenity": "bank",
+    "atm": "yes",
+    "name": "Swedbank"
+  }
+},
+{
+  "type": "node",
+  "id": 2093243333,
+  "lat": 54.6827740,
+  "lon": 25.2799008,
+  "tags": {
+    "addr:city": "Vilnius",
+    "addr:housenumber": "28",
+    "addr:postcode": "01402",
+    "addr:street": "Vilniaus g.",
+    "amenity": "bank",
+    "atm": "yes",
+    "name": "Šiaulių bankas"
+  }
+},
+{
+  "type": "node",
+  "id": 2310330590,
+  "lat": 54.7008132,
+  "lon": 25.2618572,
+  "tags": {
+    "amenity": "bank",
+    "atm": "yes",
+    "name": "Danske Bank"
+  }
+},
+{
+  "type": "node",
+  "id": 2719890567,
+  "lat": 54.6983742,
+  "lon": 25.2494185,
+  "tags": {
+    "amenity": "bank",
+    "atm": "yes",
+    "name": "Šiaulių bankas",
+    "opening_hours": "Mo-Fr 08:00-17:00"
+  }
+},
+{
+  "type": "node",
+  "id": 2896206507,
+  "lat": 54.6793689,
+  "lon": 25.2843130,
+  "tags": {
+    "amenity": "bank",
+    "atm": "yes",
+    "name": "SEB bankas",
+    "operator": "SEB"
+  }
+},
+{
+  "type": "node",
+  "id": 4052799389,
+  "lat": 54.6919647,
+  "lon": 25.2559342,
+  "tags": {
+    "addr:city": "Vilnius",
+    "addr:housenumber": "6",
+    "addr:street": "Pušų g.",
+    "amenity": "bank",
+    "atm": "yes",
+    "drive_through": "no",
+    "name": "Nordea banko Vytauto g. poskyris"
+  }
+}
+
+  ]
+}
