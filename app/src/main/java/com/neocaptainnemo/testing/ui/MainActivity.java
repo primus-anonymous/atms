@@ -93,6 +93,8 @@ public class MainActivity extends AppCompatActivity implements BottomNavigationV
         atmDetailsBottomSheet.setPeekHeight(0);
         binding.navigate.setScaleX(0);
         binding.navigate.setScaleY(0);
+        binding.zoomFurther.setScaleX(0);
+        binding.zoomFurther.setScaleY(0);
         atmDetailsBottomSheet.setHideable(true);
         binding.navigate.setVisibility(View.INVISIBLE);
 
@@ -196,7 +198,7 @@ public class MainActivity extends AppCompatActivity implements BottomNavigationV
         location = LocationServices.FusedLocationApi.getLastLocation(
                 googleApiClient);
 
-        IMapView mapView = GoogleMapsFragment.onStack(getSupportFragmentManager());
+        IMapView mapView = getMap();
 
         if (mapView != null) {
             mapView.setMyLocation(location);
@@ -228,7 +230,7 @@ public class MainActivity extends AppCompatActivity implements BottomNavigationV
 
                 if (grantResults.length > 0
                         && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                    IMapView mapView = GoogleMapsFragment.onStack(getSupportFragmentManager());
+                    IMapView mapView = getMap();
 
                     if (mapView != null) {
                         mapView.enableMyLocation();
@@ -238,7 +240,7 @@ public class MainActivity extends AppCompatActivity implements BottomNavigationV
 
                 } else {
 
-                    IMapView mapView = GoogleMapsFragment.onStack(getSupportFragmentManager());
+                    IMapView mapView = getMap();
 
                     if (mapView != null) {
                         mapView.disableMyLocation();
@@ -307,14 +309,13 @@ public class MainActivity extends AppCompatActivity implements BottomNavigationV
 
     @Override
     public void onZoomFurther() {
-        binding.zoomFurther.setVisibility(View.VISIBLE);
         showZoomInFurther();
     }
 
     @Override
     public void onGotAtms(@NonNull List<AtmNode> atmNodes) {
 
-        IMapView mapView = GoogleMapsFragment.onStack(getSupportFragmentManager());
+        IMapView mapView = getMap();
 
         if (mapView != null) {
             mapView.clearMap();
@@ -341,12 +342,30 @@ public class MainActivity extends AppCompatActivity implements BottomNavigationV
     @Override
     public void showZoomInFurther() {
         binding.zoomFurther.setVisibility(View.VISIBLE);
+        binding.zoomFurther
+                .animate()
+                .scaleX(1.f)
+                .scaleY(1.f)
+                .setDuration(getResources().getInteger(android.R.integer.config_mediumAnimTime))
+                .setListener(null)
+                .start();
     }
 
     @Override
     public void hideZoomInFurther() {
-        binding.zoomFurther.setVisibility(View.GONE);
-
+        binding.zoomFurther
+                .animate()
+                .scaleX(0.f)
+                .scaleY(0.f)
+                .setDuration(getResources().getInteger(android.R.integer.config_mediumAnimTime))
+                .setListener(new AnimatorListenerAdapter() {
+                    @Override
+                    public void onAnimationEnd(Animator animation) {
+                        super.onAnimationEnd(animation);
+                        binding.zoomFurther.setVisibility(View.GONE);
+                    }
+                })
+                .start();
     }
 
     @Override
@@ -402,28 +421,23 @@ public class MainActivity extends AppCompatActivity implements BottomNavigationV
 
         String address = addressFormatter.format(atmNode);
 
+        if (address.isEmpty()) {
+            binding.address.setText(R.string.no_address);
+        } else {
+            binding.address.setText(address);
+        }
 
         if (location != null) {
+            binding.distance.setVisibility(View.VISIBLE);
+
             double distance = SphericalUtil.computeDistanceBetween(new LatLng(atmNode.getLat(), atmNode.getLon()),
                     new LatLng(location.getLatitude(), location.getLongitude()));
 
             String fromYou = getString(R.string.distance_m_from_you, distanceFormatter.format(distance));
-
-            if (address.isEmpty()) {
-                binding.address.setText(getString(R.string.no_address) + " " + fromYou);
-            } else {
-                binding.address.setText(address + " " + fromYou);
-            }
-
+            binding.distance.setText(fromYou);
         } else {
-            if (address.isEmpty()) {
-                binding.address.setText(R.string.no_address);
-            } else {
-                binding.address.setText(address);
-            }
+            binding.distance.setVisibility(View.GONE);
         }
-
-
     }
 
     @Override
@@ -439,12 +453,22 @@ public class MainActivity extends AppCompatActivity implements BottomNavigationV
 
     @Override
     public void onAtmSelected(@NonNull AtmNode atmNode) {
-        IMapView mapView = GoogleMapsFragment.onStack(getSupportFragmentManager());
+        IMapView mapView = getMap();
 
         if (mapView != null) {
             mapView.selectAtm(atmNode);
             showMap();
         }
+    }
+
+    private IMapView getMap() {
+        IMapView mapView = GoogleMapsFragment.onStack(getSupportFragmentManager());
+
+        if (mapView != null) {
+            return mapView;
+        }
+
+        return null;
     }
 
     enum Tab {MAP, LIST, SETTINGS}
@@ -454,7 +478,7 @@ public class MainActivity extends AppCompatActivity implements BottomNavigationV
         public void onStateChanged(@NonNull View bottomSheet, int newState) {
             if (newState == BottomSheetBehavior.STATE_COLLAPSED) {
 
-                IMapView mapView = GoogleMapsFragment.onStack(getSupportFragmentManager());
+                IMapView mapView = getMap();
 
                 if (mapView != null) {
                     mapView.clearSelectedMarker();

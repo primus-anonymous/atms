@@ -66,6 +66,9 @@ public class Presenter {
     }
 
     private void doFetch() {
+        if (observable == null) {
+            return;
+        }
         if (atmsSubscription != null && !atmsSubscription.isUnsubscribed()) {
             atmsSubscription.unsubscribe();
         }

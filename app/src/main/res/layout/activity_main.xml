@@ -12,11 +12,10 @@
             android:layout_width="match_parent"
             android:layout_height="match_parent">
 
-
             <FrameLayout
                 android:id="@+id/map_container"
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
+                android:layout_height="match_parent"
                 android:layout_above="@+id/bottom_navigation" />
 
             <android.support.v7.widget.CardView
@@ -89,6 +88,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_below="@+id/appbar"
+                android:layout_marginTop="-6dp"
                 android:indeterminateOnly="true"
                 android:visibility="gone"
                 tools:visibility="visible" />
@@ -121,11 +121,25 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_below="@+id/atm_name"
-                    android:paddingBottom="16dp"
+                    android:paddingBottom="8dp"
                     android:paddingLeft="16dp"
                     android:paddingRight="16dp"
                     android:textAppearance="?android:attr/textAppearanceMedium"
                     tools:text="ул. Ленина 45, 12345, г. Урюпинск" />
+
+                <TextView
+                    android:id="@+id/distance"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_below="@+id/address"
+                    android:drawableLeft="@drawable/ic_near_me_black_24px"
+                    android:drawablePadding="4dp"
+                    android:paddingBottom="16dp"
+                    android:paddingLeft="16dp"
+                    android:paddingRight="16dp"
+                    android:textAppearance="?android:attr/textAppearanceListItemSmall"
+                    android:textColor="@color/secondaryText"
+                    tools:text="400 м" />
 
             </RelativeLayout>
         </android.support.v4.widget.NestedScrollView>

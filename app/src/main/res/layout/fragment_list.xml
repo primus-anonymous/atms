@@ -22,7 +22,6 @@
             android:padding="16dp"
             android:text="@string/atm_empty"
             android:textAppearance="?android:attr/textAppearanceMedium"
-            android:visibility="gone"
             tools:text="Банкоматов не найдено :(" />
 
     </FrameLayout>

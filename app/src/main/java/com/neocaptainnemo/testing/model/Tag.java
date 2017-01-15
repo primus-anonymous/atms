@@ -31,6 +31,11 @@ public class Tag implements Parcelable {
     private String postCode;
     @SerializedName("addr:street")
     private String street;
+    @SerializedName("atm:operator")
+    private String atmOperator;
+    @SerializedName("opening_hours")
+    private String openingHours;
+
 
     public Tag() {
 
@@ -43,6 +48,8 @@ public class Tag implements Parcelable {
         houseNumber = in.readString();
         postCode = in.readString();
         street = in.readString();
+        atmOperator = in.readString();
+        openingHours = in.readString();
     }
 
     public String getAtm() {
@@ -54,8 +61,12 @@ public class Tag implements Parcelable {
     }
 
     public String getName() {
+        if (atmOperator != null) {
+            return atmOperator;
+        }
         return name;
     }
+
 
     public void setName(String name) {
         this.name = name;
@@ -93,6 +104,11 @@ public class Tag implements Parcelable {
         this.street = street;
     }
 
+
+    public String getOpeningHours() {
+        return openingHours;
+    }
+
     @Override
     public int describeContents() {
         return 0;
@@ -106,5 +122,7 @@ public class Tag implements Parcelable {
         parcel.writeString(houseNumber);
         parcel.writeString(postCode);
         parcel.writeString(street);
+        parcel.writeString(atmOperator);
+        parcel.writeString(openingHours);
     }
 }
