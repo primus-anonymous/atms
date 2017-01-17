@@ -1,4 +1,4 @@
-package com.neocaptainnemo.testing.ui.list;
+package com.neocaptainnemo.testing.ui;
 
 import android.location.Location;
 import android.support.annotation.NonNull;
@@ -7,7 +7,7 @@ import com.neocaptainnemo.testing.model.AtmNode;
 
 import java.util.List;
 
-public interface IListView {
+public interface IAtmsView {
 
     /**
      * Displays list of atms on the list.
@@ -23,7 +23,20 @@ public interface IListView {
      */
     void setMyLocation(Location location);
 
+    /**
+     * Clears user data completely.
+     */
+    void clear();
+
+
     interface OnAtmSelected {
-        void onAtmSelected(@NonNull AtmNode atmNode);
+        /**
+         * Atm selected delegate.
+         *
+         * @param atmNode - selcted atm.
+         * @param src     - view source.
+         */
+        void onAtmSelected(@NonNull AtmNode atmNode, @NonNull String src);
     }
+
 }

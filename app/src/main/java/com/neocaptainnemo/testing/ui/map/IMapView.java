@@ -1,26 +1,13 @@
 package com.neocaptainnemo.testing.ui.map;
 
-import android.location.Location;
 import android.support.annotation.NonNull;
 
 import com.neocaptainnemo.testing.model.AtmNode;
 import com.neocaptainnemo.testing.model.ViewPort;
+import com.neocaptainnemo.testing.ui.IAtmsView;
 
-import java.util.List;
+public interface IMapView extends IAtmsView {
 
-public interface IMapView {
-
-    /**
-     * Shows atms on the map.
-     *
-     * @param atmNodes - atms to be shown.
-     */
-    void showAtms(List<AtmNode> atmNodes);
-
-    /**
-     * Clears map completely.
-     */
-    void clearMap();
 
     /**
      * Enables my location on the map.
@@ -38,27 +25,32 @@ public interface IMapView {
     void clearSelectedMarker();
 
     /**
-     * Sets current user location.
-     *
-     * @param location - current user location.
-     */
-    void setMyLocation(Location location);
-
-    /**
      * Marks given atm as selected.
      *
      * @param atmNode - selected atm.
      */
     void selectAtm(@NonNull AtmNode atmNode);
 
-    interface OnGotViewPort {
+    /**
+     * Moves camera to given atm node.
+     *
+     * @param atmNode - atm node to be zoomed to.
+     */
+    void moveCameraToAtm(@NonNull AtmNode atmNode);
+
+    interface MapDelegate {
+        /**
+         * Informs whoever interested that user moves a camera and needs to request some data for
+         * the given view port.
+         *
+         * @param viewPort - rect bound to fetch data from.
+         */
         void onGotViewPort(@NonNull ViewPort viewPort);
 
+        /**
+         * Informs user that he needs to zoom in further.
+         */
         void onZoomFurther();
-    }
-
-    interface OnAtmClicked {
-        void onAtmClicked(@NonNull AtmNode atmNode);
     }
 
 }

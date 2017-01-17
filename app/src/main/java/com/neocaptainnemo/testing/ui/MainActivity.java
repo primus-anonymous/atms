@@ -24,9 +24,11 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.SearchView;
+import android.widget.Toast;
 
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
+import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.maps.android.SphericalUtil;
@@ -37,7 +39,6 @@ import com.neocaptainnemo.testing.model.AtmNode;
 import com.neocaptainnemo.testing.model.ViewPort;
 import com.neocaptainnemo.testing.service.AddressFormatter;
 import com.neocaptainnemo.testing.service.DistanceFormatter;
-import com.neocaptainnemo.testing.ui.list.IListView;
 import com.neocaptainnemo.testing.ui.list.ListFragment;
 import com.neocaptainnemo.testing.ui.map.GoogleMapsFragment;
 import com.neocaptainnemo.testing.ui.map.IMapView;
@@ -48,19 +49,18 @@ import java.util.List;
 import javax.inject.Inject;
 
 public class MainActivity extends AppCompatActivity implements BottomNavigationView.OnNavigationItemSelectedListener,
-        IView, IMapView.OnGotViewPort, IMapView.OnAtmClicked,
+        IView, IMapView.MapDelegate,
         GoogleApiClient.ConnectionCallbacks,
         GoogleApiClient.OnConnectionFailedListener, SearchView.OnQueryTextListener,
-        IListView.OnAtmSelected {
+        IAtmsView.OnAtmSelected {
 
-    private static final int LOCATION_PERMISSION = 1;
+    static final int LOCATION_PERMISSION = 1;
     @Inject
     Presenter presenter;
     @Inject
     AddressFormatter addressFormatter;
     @Inject
     DistanceFormatter distanceFormatter;
-    private Tab openedTab;
     private ActivityMainBinding binding;
     private boolean semiTransparentToolBar;
     private BottomSheetBehavior<NestedScrollView> atmDetailsBottomSheet;
@@ -68,6 +68,7 @@ public class MainActivity extends AppCompatActivity implements BottomNavigationV
     private GoogleApiClient googleApiClient;
     private Location location;
     private SearchView searchView;
+    private LocationListener locationListener = new LocationListener();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -100,9 +101,27 @@ public class MainActivity extends AppCompatActivity implements BottomNavigationV
 
         atmDetailsBottomSheet.setBottomSheetCallback(new BottomSheetBehaviour());
 
+
+        int accessFineLocation = ContextCompat.checkSelfPermission(this,
+                Manifest.permission.ACCESS_FINE_LOCATION);
+
+        if (accessFineLocation != PackageManager.PERMISSION_GRANTED) {
+
+            if (ActivityCompat.shouldShowRequestPermissionRationale(this,
+                    Manifest.permission.ACCESS_FINE_LOCATION)) {
+                AllowNavigationDialog.instance().show(getSupportFragmentManager(), AllowNavigationDialog.TAG);
+            } else {
+
+                ActivityCompat.requestPermissions(this,
+                        new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
+                        LOCATION_PERMISSION);
+            }
+        }
+
+        semiTransparentToolBar = true;
+
         if (savedInstanceState == null) {
-            semiTransparentToolBar = true;
-            openedTab = Tab.MAP;
+
             getSupportFragmentManager()
                     .beginTransaction()
                     .replace(R.id.map_container, GoogleMapsFragment.instance(), GoogleMapsFragment.TAG)
@@ -119,42 +138,20 @@ public class MainActivity extends AppCompatActivity implements BottomNavigationV
                     .replace(R.id.settings_container, SettingsFragment.instance(), SettingsFragment.TAG)
                     .commit();
 
-            binding.listContainer.setVisibility(View.GONE);
-            binding.settingsContainer.setVisibility(View.GONE);
+            presenter.setOpenedTab(Presenter.Tab.MAP);
 
-            int accessFineLocation = ContextCompat.checkSelfPermission(this,
-                    Manifest.permission.ACCESS_FINE_LOCATION);
-
-            if (accessFineLocation != PackageManager.PERMISSION_GRANTED) {
-
-                if (ActivityCompat.shouldShowRequestPermissionRationale(this,
-                        Manifest.permission.ACCESS_FINE_LOCATION)) {
-
-
-                } else {
-
-                    ActivityCompat.requestPermissions(this,
-                            new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
-                            LOCATION_PERMISSION);
-                }
-
-            } else {
-                getMyLocation();
+        } else {
+            Presenter.Tab openedTab = (Presenter.Tab) savedInstanceState.getSerializable("tab");
+            if (openedTab != null) {
+                presenter.setOpenedTab(openedTab);
             }
         }
     }
 
-    private void getMyLocation() {
-        if (googleApiClient == null) {
-            googleApiClient = new GoogleApiClient.Builder(this)
-                    .addConnectionCallbacks(this)
-                    .addOnConnectionFailedListener(this)
-                    .addApi(LocationServices.API)
-                    .build();
-        }
-
-        googleApiClient.connect();
-
+    @Override
+    protected void onSaveInstanceState(Bundle outState) {
+        super.onSaveInstanceState(outState);
+        outState.putSerializable("tab", presenter.getOpenedTab());
     }
 
     @Override
@@ -195,21 +192,32 @@ public class MainActivity extends AppCompatActivity implements BottomNavigationV
 
     @Override
     public void onConnected(@Nullable Bundle bundle) {
-        location = LocationServices.FusedLocationApi.getLastLocation(
-                googleApiClient);
 
-        IMapView mapView = getMap();
+        int accessFineLocation = ContextCompat.checkSelfPermission(this,
+                Manifest.permission.ACCESS_FINE_LOCATION);
 
-        if (mapView != null) {
-            mapView.setMyLocation(location);
+        if (accessFineLocation == PackageManager.PERMISSION_GRANTED) {
+
+            location = LocationServices.FusedLocationApi.getLastLocation(
+                    googleApiClient);
+
+            IAtmsView view = GoogleMapsFragment.onStack(getSupportFragmentManager());
+
+            if (view != null) {
+                view.setMyLocation(location);
+            }
+
+            view = ListFragment.onStack(getSupportFragmentManager());
+
+            if (view != null) {
+                view.setMyLocation(location);
+            }
+
+            LocationRequest request = LocationRequest.create();
+
+            LocationServices.FusedLocationApi.requestLocationUpdates(googleApiClient, request,
+                    locationListener);
         }
-
-        IListView listView = ListFragment.onStack(getSupportFragmentManager());
-
-        if (listView != null) {
-            listView.setMyLocation(location);
-        }
-
     }
 
     @Override
@@ -230,17 +238,17 @@ public class MainActivity extends AppCompatActivity implements BottomNavigationV
 
                 if (grantResults.length > 0
                         && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                    IMapView mapView = getMap();
+                    IMapView mapView = GoogleMapsFragment.onStack(getSupportFragmentManager());
 
                     if (mapView != null) {
                         mapView.enableMyLocation();
                     }
 
-                    getMyLocation();
+                    googleApiConnect();
 
                 } else {
 
-                    IMapView mapView = getMap();
+                    IMapView mapView = GoogleMapsFragment.onStack(getSupportFragmentManager());
 
                     if (mapView != null) {
                         mapView.disableMyLocation();
@@ -255,27 +263,38 @@ public class MainActivity extends AppCompatActivity implements BottomNavigationV
     protected void onStart() {
         super.onStart();
         presenter.onStart();
+
+        int accessFineLocation = ContextCompat.checkSelfPermission(this,
+                Manifest.permission.ACCESS_FINE_LOCATION);
+
+        if (accessFineLocation == PackageManager.PERMISSION_GRANTED) {
+            googleApiConnect();
+        }
     }
 
     @Override
     protected void onStop() {
         super.onStop();
         presenter.onStop();
+
+        LocationServices.FusedLocationApi.removeLocationUpdates(googleApiClient, locationListener);
+        googleApiClient.disconnect();
+
     }
 
     @Override
     public boolean onNavigationItemSelected(@NonNull MenuItem item) {
         switch (item.getItemId()) {
             case R.id.action_maps:
-                showMap();
+                presenter.setOpenedTab(Presenter.Tab.MAP);
                 return true;
 
             case R.id.action_list:
-                showList();
+                presenter.setOpenedTab(Presenter.Tab.LIST);
                 return true;
 
             case R.id.action_settings:
-                showSettings();
+                presenter.setOpenedTab(Presenter.Tab.SETTINGS);
                 return true;
         }
         return false;
@@ -285,21 +304,13 @@ public class MainActivity extends AppCompatActivity implements BottomNavigationV
     public void onBackPressed() {
         if (atmDetailsBottomSheet.getState() != BottomSheetBehavior.STATE_COLLAPSED) {
             atmDetailsBottomSheet.setState(BottomSheetBehavior.STATE_COLLAPSED);
-        } else if (openedTab != Tab.MAP) {
-            showMap();
+        } else if (presenter.getOpenedTab() != Presenter.Tab.MAP) {
+            presenter.setOpenedTab(Presenter.Tab.MAP);
         } else {
             super.onBackPressed();
         }
     }
 
-    private void animateColorChange(int from, int to) {
-        int colorFrom = ContextCompat.getColor(this, from);
-        int colorTo = ContextCompat.getColor(this, to);
-        ValueAnimator colorAnimation = ValueAnimator.ofObject(new ArgbEvaluator(), colorFrom, colorTo);
-        colorAnimation.setDuration(getResources().getInteger(android.R.integer.config_mediumAnimTime));
-        colorAnimation.addUpdateListener(animator -> binding.toolbar.setBackgroundColor((int) animator.getAnimatedValue()));
-        colorAnimation.start();
-    }
 
     @Override
     public void onGotViewPort(@NonNull ViewPort viewPort) {
@@ -315,17 +326,18 @@ public class MainActivity extends AppCompatActivity implements BottomNavigationV
     @Override
     public void onGotAtms(@NonNull List<AtmNode> atmNodes) {
 
-        IMapView mapView = getMap();
+        IAtmsView view = GoogleMapsFragment.onStack(getSupportFragmentManager());
 
-        if (mapView != null) {
-            mapView.clearMap();
-            mapView.showAtms(atmNodes);
+        if (view != null) {
+            view.clear();
+            view.showAtms(atmNodes);
         }
 
-        IListView listView = ListFragment.onStack(getSupportFragmentManager());
+        view = ListFragment.onStack(getSupportFragmentManager());
 
-        if (listView != null) {
-            listView.showAtms(atmNodes);
+        if (view != null) {
+            view.clear();
+            view.showAtms(atmNodes);
         }
     }
 
@@ -337,6 +349,11 @@ public class MainActivity extends AppCompatActivity implements BottomNavigationV
     @Override
     public void hideProgress() {
         binding.progress.setVisibility(View.GONE);
+    }
+
+    @Override
+    public void showError(@NonNull String errorMsg) {
+        Toast.makeText(this, errorMsg, Toast.LENGTH_LONG).show();
     }
 
     @Override
@@ -379,7 +396,6 @@ public class MainActivity extends AppCompatActivity implements BottomNavigationV
 
         binding.listContainer.setVisibility(View.GONE);
         binding.settingsContainer.setVisibility(View.GONE);
-        openedTab = Tab.MAP;
     }
 
     @Override
@@ -394,7 +410,6 @@ public class MainActivity extends AppCompatActivity implements BottomNavigationV
 
         binding.listContainer.setVisibility(View.VISIBLE);
         binding.settingsContainer.setVisibility(View.GONE);
-        openedTab = Tab.LIST;
     }
 
     @Override
@@ -408,36 +423,6 @@ public class MainActivity extends AppCompatActivity implements BottomNavigationV
 
         binding.listContainer.setVisibility(View.GONE);
         binding.settingsContainer.setVisibility(View.VISIBLE);
-        openedTab = Tab.SETTINGS;
-    }
-
-    @Override
-    public void onAtmClicked(@NonNull AtmNode atmNode) {
-
-        selectedAtm = atmNode;
-
-        binding.atmName.setText(atmNode.getTags().getName());
-        atmDetailsBottomSheet.setState(BottomSheetBehavior.STATE_EXPANDED);
-
-        String address = addressFormatter.format(atmNode);
-
-        if (address.isEmpty()) {
-            binding.address.setText(R.string.no_address);
-        } else {
-            binding.address.setText(address);
-        }
-
-        if (location != null) {
-            binding.distance.setVisibility(View.VISIBLE);
-
-            double distance = SphericalUtil.computeDistanceBetween(new LatLng(atmNode.getLat(), atmNode.getLon()),
-                    new LatLng(location.getLatitude(), location.getLongitude()));
-
-            String fromYou = getString(R.string.distance_m_from_you, distanceFormatter.format(distance));
-            binding.distance.setText(fromYou);
-        } else {
-            binding.distance.setVisibility(View.GONE);
-        }
     }
 
     @Override
@@ -452,33 +437,95 @@ public class MainActivity extends AppCompatActivity implements BottomNavigationV
     }
 
     @Override
-    public void onAtmSelected(@NonNull AtmNode atmNode) {
-        IMapView mapView = getMap();
+    public void onAtmSelected(@NonNull AtmNode atmNode, @NonNull String src) {
 
-        if (mapView != null) {
-            mapView.selectAtm(atmNode);
-            showMap();
-        }
-    }
-
-    private IMapView getMap() {
         IMapView mapView = GoogleMapsFragment.onStack(getSupportFragmentManager());
 
         if (mapView != null) {
-            return mapView;
+            mapView.selectAtm(atmNode);
+            if (ListFragment.TAG.equals(src)) {
+                mapView.moveCameraToAtm(atmNode);
+            }
+            showMap();
         }
 
-        return null;
+        selectedAtm = atmNode;
+
+        binding.atmName.setText(atmNode.getTags().getName());
+        atmDetailsBottomSheet.setState(BottomSheetBehavior.STATE_EXPANDED);
+
+        String address = addressFormatter.format(atmNode);
+
+        if (address.isEmpty()) {
+            binding.address.setText(R.string.no_address);
+        } else {
+            binding.address.setText(address);
+        }
+
+        updateDistance();
+
     }
 
-    enum Tab {MAP, LIST, SETTINGS}
+    private void updateDistance() {
+        if (location != null && selectedAtm != null) {
+
+            double distance = SphericalUtil.computeDistanceBetween(new LatLng(selectedAtm.getLat(), selectedAtm.getLon()),
+                    new LatLng(location.getLatitude(), location.getLongitude()));
+
+            String fromYou = getString(R.string.distance_m_from_you, distanceFormatter.format(distance));
+            binding.distance.setText(fromYou);
+        } else {
+            binding.distance.setText(R.string.location_disabled);
+        }
+    }
+
+    private void animateColorChange(int from, int to) {
+        int colorFrom = ContextCompat.getColor(this, from);
+        int colorTo = ContextCompat.getColor(this, to);
+        ValueAnimator colorAnimation = ValueAnimator.ofObject(new ArgbEvaluator(), colorFrom, colorTo);
+        colorAnimation.setDuration(getResources().getInteger(android.R.integer.config_mediumAnimTime));
+        colorAnimation.addUpdateListener(animator -> binding.toolbar.setBackgroundColor((int) animator.getAnimatedValue()));
+        colorAnimation.start();
+    }
+
+    private void googleApiConnect() {
+        if (googleApiClient == null) {
+            googleApiClient = new GoogleApiClient.Builder(this)
+                    .addConnectionCallbacks(this)
+                    .addOnConnectionFailedListener(this)
+                    .addApi(LocationServices.API)
+                    .build();
+        }
+
+        googleApiClient.connect();
+
+    }
+
+
+    private class LocationListener implements com.google.android.gms.location.LocationListener {
+
+        @Override
+        public void onLocationChanged(Location location) {
+
+            MainActivity.this.location = location;
+
+            IAtmsView view = ListFragment.onStack(getSupportFragmentManager());
+
+            if (view != null) {
+                view.setMyLocation(location);
+            }
+
+            updateDistance();
+
+        }
+    }
 
     private class BottomSheetBehaviour extends BottomSheetBehavior.BottomSheetCallback {
         @Override
         public void onStateChanged(@NonNull View bottomSheet, int newState) {
             if (newState == BottomSheetBehavior.STATE_COLLAPSED) {
 
-                IMapView mapView = getMap();
+                IMapView mapView = GoogleMapsFragment.onStack(getSupportFragmentManager());
 
                 if (mapView != null) {
                     mapView.clearSelectedMarker();

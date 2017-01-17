@@ -1,0 +1,31 @@
+<resources>
+    <string name="app_name">ATMs</string>
+    <string name="item_bn_maps">Map</string>
+    <string name="item_bn_list">List</string>
+    <string name="item_bn_settings">Settings</string>
+    <string name="settings_category_data">Data</string>
+    <string name="about_osm">About Open Street Map</string>
+
+    <string name="settings_category_common">Common</string>
+    <string name="settings_rate_title">Rate us in Google Play</string>
+    <string name="settings_rate_about">About app</string>
+    <string name="settings_rate_about_summary" formatted="false">Version %s (%d)</string>
+    <string name="please_zoom_further">Can\'t see a thing!\nDarling, move further in!</string>
+    <string name="no_address">No address available :(</string>
+    <string name="distance_m">%.0f m</string>
+    <string name="distance_km">%.2f km</string>
+    <string name="search_title">Filter by name</string>
+    <string name="search_hint">Filter by name</string>
+    <string name="atm_empty">No ATMs found :(</string>
+    <string name="distance_m_from_you">(%s straight)</string>
+    <string name="choose_the_nav_way">To reach ATM we...</string>
+    <string name="nav_walk">walk</string>
+    <string name="nav_drive">drive</string>
+    <string name="network_error">Oops, there is no connection!</string>
+    <string name="general_error">Oops, something is wrong. Try it later.</string>
+    <string name="allow_navigation">Now I ask you location permission to find you and calculate the distance to ATMs</string>
+    <string name="btn_allow">Let\'s go!</string>
+    <string name="btn_disallow">Not now</string>
+    <string name="location_disabled">GPS is disabled</string>
+
+</resources>

@@ -3,6 +3,7 @@ package com.neocaptainnemo.testing.ui;
 import android.content.Context;
 
 import com.google.gson.Gson;
+import com.neocaptainnemo.testing.R;
 import com.neocaptainnemo.testing.model.AtmNode;
 import com.neocaptainnemo.testing.model.ViewPort;
 import com.neocaptainnemo.testing.service.Atms;
@@ -14,6 +15,7 @@ import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
@@ -149,6 +151,47 @@ public class PresenterTest {
         presenter.setFilter("B SEB!2");
 
         verify(view).onGotAtms(Collections.emptyList());
+    }
+
+    @Test
+    public void fetchGeneralError() {
+
+        when(context.getString(R.string.general_error)).thenReturn("GeneralError");
+
+        when(atms.request(any())).thenReturn(Observable.error(new Exception()));
+        presenter.fetchAtms(new ViewPort(1, 1, 2, 1));
+
+        verify(view).showError("GeneralError");
+    }
+
+    @Test
+    public void fetchIOError() {
+
+        when(context.getString(R.string.network_error)).thenReturn("NetworkError");
+
+        when(atms.request(any())).thenReturn(Observable.error(new IOException()));
+        presenter.fetchAtms(new ViewPort(1, 1, 2, 1));
+
+        verify(view).showError("NetworkError");
+    }
+
+
+    @Test
+    public void openMap() {
+        presenter.setOpenedTab(Presenter.Tab.MAP);
+        verify(view).showMap();
+    }
+
+    @Test
+    public void openList() {
+        presenter.setOpenedTab(Presenter.Tab.LIST);
+        verify(view).showList();
+    }
+
+    @Test
+    public void openSettings() {
+        presenter.setOpenedTab(Presenter.Tab.SETTINGS);
+        verify(view).showSettings();
     }
 
     private OsmResponse getOsmResponse() {

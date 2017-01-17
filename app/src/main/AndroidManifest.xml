@@ -6,7 +6,6 @@
         android:glEsVersion="0x00020000"
         android:required="true" />
 
-    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
@@ -22,6 +21,7 @@
         <activity
             android:name=".ui.MainActivity"
             android:launchMode="singleTop"
+            android:resizeableActivity="false"
             android:screenOrientation="portrait"
             android:theme="@style/AppTheme">
 
@@ -36,7 +36,7 @@
 
         <meta-data
             android:name="com.google.android.geo.API_KEY"
-            android:value="" />
+            android:value="AIzaSyBvEcb0ZPRkAuhT20YW6n5zxjugDFWWD4o" />
         <meta-data
             android:name="com.google.android.gms.version"
             android:value="@integer/google_play_services_version" />

@@ -39,12 +39,14 @@ public class GoogleMapsFragment extends Fragment implements IMapView, OnMapReady
         GoogleMap.OnMarkerClickListener, ClusterManager.OnClusterClickListener<AtmNode> {
 
     public static final String TAG = "GoogleMapsFragment";
-    private FragmentGoogleMapsBinding binding;
-    private OnGotViewPort viewPortListener;
-    private OnAtmClicked atmListener;
+    private static final int MIN_ZOOM_LEVEL = 12;
+    private static final float TARGET_ZOOM = 15.0f;
+    private MapDelegate viewPortListener;
+    private OnAtmSelected atmListener;
     private GoogleMap map;
     private AtmNode selectedAtm;
     private Marker selectedMarker;
+    private boolean locationSet;
 
     private ClusterManager<AtmNode> clusterManager;
 
@@ -64,11 +66,11 @@ public class GoogleMapsFragment extends Fragment implements IMapView, OnMapReady
     @Override
     public void onAttach(Context context) {
         super.onAttach(context);
-        if (context instanceof OnGotViewPort) {
-            viewPortListener = (OnGotViewPort) context;
+        if (context instanceof MapDelegate) {
+            viewPortListener = (MapDelegate) context;
         }
-        if (context instanceof OnAtmClicked) {
-            atmListener = (OnAtmClicked) context;
+        if (context instanceof OnAtmSelected) {
+            atmListener = (OnAtmSelected) context;
         }
     }
 
@@ -92,7 +94,7 @@ public class GoogleMapsFragment extends Fragment implements IMapView, OnMapReady
     @Nullable
     @Override
     public View onCreateView(LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
-        binding = DataBindingUtil.inflate(inflater, R.layout.fragment_google_maps, container, false);
+        FragmentGoogleMapsBinding binding = DataBindingUtil.inflate(inflater, R.layout.fragment_google_maps, container, false);
         return binding.getRoot();
     }
 
@@ -122,7 +124,7 @@ public class GoogleMapsFragment extends Fragment implements IMapView, OnMapReady
 
             float zoomLevel = googleMap.getCameraPosition().zoom;
 
-            if (zoomLevel > 12) {
+            if (zoomLevel > MIN_ZOOM_LEVEL) {
                 if (viewPortListener != null) {
                     viewPortListener.onGotViewPort(viewPort);
                 }
@@ -142,13 +144,13 @@ public class GoogleMapsFragment extends Fragment implements IMapView, OnMapReady
     }
 
     @Override
-    public void showAtms(List<AtmNode> atmNodes) {
+    public void showAtms(@NonNull List<AtmNode> atmNodes) {
         clusterManager.addItems(atmNodes);
         clusterManager.cluster();
     }
 
     @Override
-    public void clearMap() {
+    public void clear() {
         clusterManager.clearItems();
         selectedMarker = null;
     }
@@ -163,50 +165,61 @@ public class GoogleMapsFragment extends Fragment implements IMapView, OnMapReady
         map.setMyLocationEnabled(false);
     }
 
+
+    @Override
+    public void selectAtm(@NonNull AtmNode atmNode) {
+        selectedAtm = atmNode;
+
+        for (Marker marker : clusterManager.getMarkerCollection().getMarkers()) {
+            if (marker.getTag() != null && marker.getTag() instanceof AtmNode) {
+                AtmNode atm = (AtmNode) marker.getTag();
+                if (atm.equals(selectedAtm)) {
+                    marker.setIcon(BitmapDescriptorFactory.fromResource(R.drawable.ic_map_pin_atm_selected));
+                }
+            }
+        }
+
+    }
+
     @Override
     public void clearSelectedMarker() {
+        selectedAtm = null;
         if (selectedMarker != null) {
             selectedMarker.setIcon(BitmapDescriptorFactory.fromResource(R.drawable.ic_map_pin_atm));
             selectedMarker = null;
-            selectedAtm = null;
         }
+
     }
 
     @Override
     public void setMyLocation(Location location) {
-        map.animateCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(location.getLatitude(), location.getLongitude()),
-                15.0f));
+        if (location != null && !locationSet) {
+            map.animateCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(location.getLatitude(), location.getLongitude()),
+                    TARGET_ZOOM));
+            locationSet = true;
+        }
     }
 
     @Override
-    public void selectAtm(@NonNull AtmNode atmNode) {
-
-        if (atmListener != null) {
-            atmListener.onAtmClicked(atmNode);
-
-            selectedAtm = atmNode;
-
-            map.animateCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(atmNode.getLat(), atmNode.getLon()),
-                    15.0f));
-        }
-
+    public void moveCameraToAtm(@NonNull AtmNode atmNode) {
+        map.animateCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(atmNode.getLat(), atmNode.getLon()),
+                TARGET_ZOOM));
     }
+
 
     @Override
     public boolean onMarkerClick(Marker marker) {
         boolean res = clusterManager.onMarkerClick(marker);
 
         if (!res && atmListener != null && marker.getTag() != null) {
-            atmListener.onAtmClicked((AtmNode) marker.getTag());
-
-            selectedAtm = (AtmNode) marker.getTag();
+            atmListener.onAtmSelected((AtmNode) marker.getTag(), TAG);
 
             if (selectedMarker != null) {
                 selectedMarker.setIcon(BitmapDescriptorFactory.fromResource(R.drawable.ic_map_pin_atm));
             }
-            selectedMarker = marker;
 
-            marker.setIcon(BitmapDescriptorFactory.fromResource(R.drawable.ic_map_pin_atm_selected));
+            selectedMarker = marker;
+            selectedMarker.setIcon(BitmapDescriptorFactory.fromResource(R.drawable.ic_map_pin_atm_selected));
             return true;
 
         }
@@ -250,7 +263,12 @@ public class GoogleMapsFragment extends Fragment implements IMapView, OnMapReady
         @Override
         protected void onClusterItemRendered(AtmNode clusterItem, Marker marker) {
             marker.setTag(clusterItem);
+            if (clusterItem.equals(selectedAtm)) {
+                selectedMarker = marker;
+            }
             super.onClusterItemRendered(clusterItem, marker);
         }
+
+
     }
 }

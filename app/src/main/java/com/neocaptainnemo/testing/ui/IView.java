@@ -26,6 +26,13 @@ interface IView {
     void hideProgress();
 
     /**
+     * Shows user-friendly error nessage.
+     *
+     * @param errorMsg - message displayed to user.
+     */
+    void showError(@NonNull String errorMsg);
+
+    /**
      * Shows plz zoom further info dialog.
      */
     void showZoomInFurther();

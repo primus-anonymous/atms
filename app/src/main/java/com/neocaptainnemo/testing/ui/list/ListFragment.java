@@ -17,12 +17,13 @@ import com.neocaptainnemo.testing.R;
 import com.neocaptainnemo.testing.app.App;
 import com.neocaptainnemo.testing.databinding.FragmentListBinding;
 import com.neocaptainnemo.testing.model.AtmNode;
+import com.neocaptainnemo.testing.ui.IAtmsView;
 
 import java.util.List;
 
 import javax.inject.Inject;
 
-public class ListFragment extends Fragment implements IListView, AtmAdapter.OnAtmClicked {
+public class ListFragment extends Fragment implements IAtmsView, AtmAdapter.OnAtmClicked {
 
     public static final String TAG = "ListFragment";
     @Inject
@@ -34,10 +35,10 @@ public class ListFragment extends Fragment implements IListView, AtmAdapter.OnAt
         return new ListFragment();
     }
 
-    public static IListView onStack(@NonNull FragmentManager manager) {
+    public static IAtmsView onStack(@NonNull FragmentManager manager) {
         Fragment fragment = manager.findFragmentByTag(TAG);
-        if (fragment instanceof IListView) {
-            return (IListView) fragment;
+        if (fragment instanceof IAtmsView) {
+            return (IAtmsView) fragment;
         }
         return null;
     }
@@ -79,10 +80,8 @@ public class ListFragment extends Fragment implements IListView, AtmAdapter.OnAt
         return binding.getRoot();
     }
 
-
     @Override
     public void showAtms(@NonNull List<AtmNode> atmNodes) {
-        adapter.clear();
         adapter.add(atmNodes);
         adapter.notifyDataSetChanged();
 
@@ -100,11 +99,18 @@ public class ListFragment extends Fragment implements IListView, AtmAdapter.OnAt
     }
 
     @Override
+    public void clear() {
+        adapter.clear();
+    }
+
+    @Override
     public void onAtmClicked(@NonNull AtmNode atmNode) {
 
         if (atmSelectedListener != null) {
-            atmSelectedListener.onAtmSelected(atmNode);
+            atmSelectedListener.onAtmSelected(atmNode, TAG);
         }
 
     }
+
+
 }
