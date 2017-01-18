@@ -15,6 +15,14 @@
       },
       "oauth_client": [
         {
+          "client_id": "153555502234-7m4au843kn1442g484djn809assual7j.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.neocaptainnemo.atms",
+            "certificate_hash": "84C763C84921175267D0758AC9970B879CC3F8FF"
+          }
+        },
+        {
           "client_id": "153555502234-oasiahm2cejijfphc9k4c65hrion7jgo.apps.googleusercontent.com",
           "client_type": 3
         }
@@ -29,8 +37,13 @@
           "status": 1
         },
         "appinvite_service": {
-          "status": 1,
-          "other_platform_oauth_client": []
+          "status": 2,
+          "other_platform_oauth_client": [
+            {
+              "client_id": "153555502234-oasiahm2cejijfphc9k4c65hrion7jgo.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
         },
         "ads_service": {
           "status": 2
