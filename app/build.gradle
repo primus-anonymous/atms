@@ -5,13 +5,13 @@ android {
     compileSdkVersion 25
     buildToolsVersion "25.0.2"
     defaultConfig {
-        applicationId "com.neocaptainnemo.testing"
+        applicationId "com.neocaptainnemo.atms"
         minSdkVersion 14
         targetSdkVersion 25
         versionCode 1
         versionName "1.0"
 
-        testInstrumentationRunner 'com.neocaptainnemo.testing.mocks.MockTestRunner'
+        testInstrumentationRunner 'com.neocaptainnemo.atms.mocks.MockTestRunner'
 
         buildConfigField "String", "OSM_API_URL", "\"http://overpass.osm.rambler.ru/\""
     }
