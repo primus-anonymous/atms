@@ -175,17 +175,18 @@ public class GoogleMapsFragment extends Fragment implements IMapView, OnMapReady
 
     @Override
     public void selectAtm(@NonNull AtmNode atmNode) {
-        selectedAtm = atmNode;
+        if (clusterManager != null) {
+            selectedAtm = atmNode;
 
-        for (Marker marker : clusterManager.getMarkerCollection().getMarkers()) {
-            if (marker.getTag() != null && marker.getTag() instanceof AtmNode) {
-                AtmNode atm = (AtmNode) marker.getTag();
-                if (atm.equals(selectedAtm)) {
-                    marker.setIcon(BitmapDescriptorFactory.fromResource(R.drawable.ic_map_pin_atm_selected));
+            for (Marker marker : clusterManager.getMarkerCollection().getMarkers()) {
+                if (marker.getTag() != null && marker.getTag() instanceof AtmNode) {
+                    AtmNode atm = (AtmNode) marker.getTag();
+                    if (atm.equals(selectedAtm)) {
+                        marker.setIcon(BitmapDescriptorFactory.fromResource(R.drawable.ic_map_pin_atm_selected));
+                    }
                 }
             }
         }
-
     }
 
     @Override
@@ -200,7 +201,7 @@ public class GoogleMapsFragment extends Fragment implements IMapView, OnMapReady
 
     @Override
     public void setMyLocation(Location location) {
-        if (location != null && !locationSet) {
+        if (location != null && !locationSet && map != null) {
             map.animateCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(location.getLatitude(), location.getLongitude()),
                     TARGET_ZOOM));
             locationSet = true;
@@ -209,8 +210,10 @@ public class GoogleMapsFragment extends Fragment implements IMapView, OnMapReady
 
     @Override
     public void moveCameraToAtm(@NonNull AtmNode atmNode) {
-        map.animateCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(atmNode.getLat(), atmNode.getLon()),
-                TARGET_ZOOM));
+        if (map != null) {
+            map.animateCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(atmNode.getLat(), atmNode.getLon()),
+                    TARGET_ZOOM));
+        }
     }
 
 

@@ -283,8 +283,9 @@ public class MainActivity extends AppCompatActivity implements BottomNavigationV
         presenter.onStop();
 
         LocationServices.FusedLocationApi.removeLocationUpdates(googleApiClient, locationListener);
-        googleApiClient.disconnect();
-
+        if (googleApiClient.isConnected()) {
+            googleApiClient.disconnect();
+        }
     }
 
     @Override
