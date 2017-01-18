@@ -54,6 +54,7 @@ public class MainActivity extends AppCompatActivity implements BottomNavigationV
         GoogleApiClient.OnConnectionFailedListener, SearchView.OnQueryTextListener,
         IAtmsView.OnAtmSelected {
 
+    public static final String TEST = "test";
     static final int LOCATION_PERMISSION = 1;
     @Inject
     Presenter presenter;
@@ -145,6 +146,10 @@ public class MainActivity extends AppCompatActivity implements BottomNavigationV
             if (openedTab != null) {
                 presenter.setOpenedTab(openedTab);
             }
+        }
+
+        if (getIntent().hasExtra(TEST)) {
+            presenter.fetchAtms(new ViewPort(1, 1, 1, 1));
         }
     }
 
@@ -457,9 +462,9 @@ public class MainActivity extends AppCompatActivity implements BottomNavigationV
         String address = addressFormatter.format(atmNode);
 
         if (address.isEmpty()) {
-            binding.address.setText(R.string.no_address);
+            binding.atmAddress.setText(R.string.no_address);
         } else {
-            binding.address.setText(address);
+            binding.atmAddress.setText(address);
         }
 
         updateDistance();

@@ -117,7 +117,7 @@
                     tools:text="Сбербанк" />
 
                 <TextView
-                    android:id="@+id/address"
+                    android:id="@+id/atm_address"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_below="@+id/atm_name"
@@ -131,7 +131,7 @@
                     android:id="@+id/distance"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_below="@+id/address"
+                    android:layout_below="@+id/atm_address"
                     android:drawableLeft="@drawable/ic_near_me_black_24px"
                     android:drawablePadding="4dp"
                     android:paddingBottom="16dp"

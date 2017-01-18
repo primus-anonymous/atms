@@ -145,26 +145,33 @@ public class GoogleMapsFragment extends Fragment implements IMapView, OnMapReady
 
     @Override
     public void showAtms(@NonNull List<AtmNode> atmNodes) {
-        clusterManager.addItems(atmNodes);
-        clusterManager.cluster();
+        if (clusterManager != null) {
+            clusterManager.addItems(atmNodes);
+            clusterManager.cluster();
+        }
     }
 
     @Override
     public void clear() {
-        clusterManager.clearItems();
-        selectedMarker = null;
+        if (clusterManager != null) {
+            clusterManager.clearItems();
+            selectedMarker = null;
+        }
     }
 
     @Override
     public void enableMyLocation() {
-        map.setMyLocationEnabled(true);
+        if (map != null) {
+            map.setMyLocationEnabled(true);
+        }
     }
 
     @Override
     public void disableMyLocation() {
-        map.setMyLocationEnabled(false);
+        if (map != null) {
+            map.setMyLocationEnabled(false);
+        }
     }
-
 
     @Override
     public void selectAtm(@NonNull AtmNode atmNode) {

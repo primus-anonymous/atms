@@ -1,0 +1,43 @@
+{
+  "version": 0.6,
+  "generator": "Overpass API",
+  "osm3s": {
+    "timestamp_osm_base": "2017-01-13T14:31:02Z",
+    "copyright": "The data included in this document is from www.openstreetmap.org. The data is made available under ODbL."
+  },
+  "elements": [
+
+{
+  "type": "node",
+  "id": 273474581,
+  "lat": 54.6759048,
+  "lon": 25.2514369,
+  "tags": {
+    "amenity": "bank",
+    "atm": "yes",
+    "created_by": "Potlatch 0.9c",
+    "name": "Swedbank",
+    "operator": "Swedbank"
+  }
+},
+{
+  "type": "node",
+  "id": 325105300,
+  "lat": 54.6865599,
+  "lon": 25.2810277,
+  "tags": {
+    "addr:city": "Vilnius",
+    "addr:housenumber": "12",
+    "addr:postcode": "01103",
+    "addr:street": "Gedimino pr.",
+    "amenity": "bank",
+    "atm": "yes",
+    "drive_through": "no",
+    "name": "AB SEB Bankas",
+    "opening_hours": "Mo-Th 08:00-17:00; Fr 08:00-16:00",
+    "operator": "SEB",
+    "website": "http://www.seb.lt"
+  }
+}
+  ]
+}
