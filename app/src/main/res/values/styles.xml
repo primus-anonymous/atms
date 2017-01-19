@@ -9,11 +9,10 @@
         <item name="preferenceTheme">@style/AppTheme.Preference</item>
     </style>
 
-    <style name="AppTheme.Preference" parent="Theme.AppCompat.Light.NoActionBar">
+    <style name="AppTheme.Preference" parent="@style/PreferenceThemeOverlay.v14.Material">
         <item name="android:background">@android:color/white</item>
         <item name="colorPrimary">@color/colorPrimary</item>
         <item name="colorPrimaryDark">@color/colorPrimaryDark</item>
         <item name="colorAccent">@color/colorAccent</item>
     </style>
-
 </resources>
