@@ -35,7 +35,7 @@
                     android:layout_height="wrap_content"
                     android:background="@color/colorAccent"
                     android:gravity="center"
-                    android:padding="8dp"
+                    android:padding="@dimen/interelement_half"
                     android:text="@string/please_zoom_further"
                     android:textAppearance="?android:attr/textAppearanceMedium"
                     android:textColor="@android:color/white" />
@@ -112,7 +112,7 @@
                     android:id="@+id/atm_name"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:padding="16dp"
+                    android:padding="@dimen/interelement"
                     android:textAppearance="?android:attr/textAppearanceLarge"
                     tools:text="Сбербанк" />
 
@@ -122,8 +122,8 @@
                     android:layout_height="wrap_content"
                     android:layout_below="@+id/atm_name"
                     android:paddingBottom="8dp"
-                    android:paddingLeft="16dp"
-                    android:paddingRight="16dp"
+                    android:paddingLeft="@dimen/activity_horizontal_margin"
+                    android:paddingRight="@dimen/activity_horizontal_margin"
                     android:textAppearance="?android:attr/textAppearanceMedium"
                     tools:text="ул. Ленина 45, 12345, г. Урюпинск" />
 
@@ -134,9 +134,9 @@
                     android:layout_below="@+id/atm_address"
                     android:drawableLeft="@drawable/ic_near_me_black_24px"
                     android:drawablePadding="4dp"
-                    android:paddingBottom="16dp"
-                    android:paddingLeft="16dp"
-                    android:paddingRight="16dp"
+                    android:paddingBottom="@dimen/interelement"
+                    android:paddingLeft="@dimen/activity_horizontal_margin"
+                    android:paddingRight="@dimen/activity_horizontal_margin"
                     android:textAppearance="?android:attr/textAppearanceListItemSmall"
                     android:textColor="@color/secondaryText"
                     tools:text="400 м" />

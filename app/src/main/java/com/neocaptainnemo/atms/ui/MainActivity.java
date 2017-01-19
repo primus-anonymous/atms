@@ -75,10 +75,17 @@ public class MainActivity extends AppCompatActivity implements BottomNavigationV
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
+        googleApiClient = new GoogleApiClient.Builder(this)
+                .addConnectionCallbacks(this)
+                .addOnConnectionFailedListener(this)
+                .addApi(LocationServices.API)
+                .build();
+
+        binding = DataBindingUtil.setContentView(this, R.layout.activity_main);
+
         ((App) getApplication()).getAppComponent().inject(this);
         presenter.setView(this);
 
-        binding = DataBindingUtil.setContentView(this, R.layout.activity_main);
         setSupportActionBar(binding.toolbar);
 
         binding.bottomNavigation.setOnNavigationItemSelectedListener(this);
@@ -249,7 +256,7 @@ public class MainActivity extends AppCompatActivity implements BottomNavigationV
                         mapView.enableMyLocation();
                     }
 
-                    googleApiConnect();
+                    googleApiClient.connect();
 
                 } else {
 
@@ -273,7 +280,7 @@ public class MainActivity extends AppCompatActivity implements BottomNavigationV
                 Manifest.permission.ACCESS_FINE_LOCATION);
 
         if (accessFineLocation == PackageManager.PERMISSION_GRANTED) {
-            googleApiConnect();
+            googleApiClient.connect();
         }
     }
 
@@ -282,8 +289,8 @@ public class MainActivity extends AppCompatActivity implements BottomNavigationV
         super.onStop();
         presenter.onStop();
 
-        LocationServices.FusedLocationApi.removeLocationUpdates(googleApiClient, locationListener);
         if (googleApiClient.isConnected()) {
+            LocationServices.FusedLocationApi.removeLocationUpdates(googleApiClient, locationListener);
             googleApiClient.disconnect();
         }
     }
@@ -493,20 +500,7 @@ public class MainActivity extends AppCompatActivity implements BottomNavigationV
         colorAnimation.addUpdateListener(animator -> binding.toolbar.setBackgroundColor((int) animator.getAnimatedValue()));
         colorAnimation.start();
     }
-
-    private void googleApiConnect() {
-        if (googleApiClient == null) {
-            googleApiClient = new GoogleApiClient.Builder(this)
-                    .addConnectionCallbacks(this)
-                    .addOnConnectionFailedListener(this)
-                    .addApi(LocationServices.API)
-                    .build();
-        }
-
-        googleApiClient.connect();
-
-    }
-
+    
 
     private class LocationListener implements com.google.android.gms.location.LocationListener {
 
