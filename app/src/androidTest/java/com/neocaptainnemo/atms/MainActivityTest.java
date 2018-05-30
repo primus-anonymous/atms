@@ -335,7 +335,7 @@ public class MainActivityTest {
 
     private Intent launchTestIntent() {
         Intent intent = new Intent();
-        intent.putExtra(MainActivity.TEST, true);
+        intent.putExtra(MainActivity.test, true);
         return intent;
     }
 

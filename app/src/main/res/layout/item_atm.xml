@@ -1,55 +1,53 @@
 <?xml version="1.0" encoding="utf-8"?>
-<layout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools">
 
-    <RelativeLayout
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="?android:attr/selectableItemBackground"
+    android:clickable="true"
+    android:focusable="true"
+    android:orientation="vertical">
+
+    <TextView
+        android:id="@+id/name"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentLeft="true"
+        android:layout_toLeftOf="@+id/distance"
+        android:paddingLeft="@dimen/activity_horizontal_margin"
+        android:paddingRight="@dimen/activity_horizontal_margin"
+        android:paddingTop="@dimen/interelement"
+        android:textAppearance="?android:attr/textAppearanceMedium"
+        android:textColor="@color/primaryText"
+        tools:text="Сбербанк Сбербанк Сбербанк Сбербанк" />
+
+    <TextView
+        android:id="@+id/address"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:background="?android:attr/selectableItemBackground"
-        android:clickable="true"
-        android:orientation="vertical">
+        android:layout_below="@id/name"
+        android:paddingBottom="@dimen/interelement"
+        android:paddingLeft="@dimen/activity_horizontal_margin"
+        android:paddingRight="@dimen/activity_horizontal_margin"
+        android:paddingTop="8dp"
+        android:textAppearance="?android:attr/textAppearanceListItemSmall"
+        android:textColor="@color/secondaryText"
+        tools:text="ул. Ленина 54" />
 
-        <TextView
-            android:id="@+id/name"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_alignParentLeft="true"
-            android:layout_toLeftOf="@+id/distance"
-            android:paddingLeft="@dimen/activity_horizontal_margin"
-            android:paddingRight="@dimen/activity_horizontal_margin"
-            android:paddingTop="@dimen/interelement"
-            android:textAppearance="?android:attr/textAppearanceMedium"
-            android:textColor="@color/primaryText"
-            tools:text="Сбербанк Сбербанк Сбербанк Сбербанк" />
+    <TextView
+        android:id="@+id/distance"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentRight="true"
+        android:drawableLeft="@drawable/ic_near_me_black_24px"
+        android:drawablePadding="4dp"
+        android:gravity="right"
+        android:paddingLeft="@dimen/activity_horizontal_margin"
+        android:paddingRight="@dimen/activity_horizontal_margin"
+        android:paddingTop="24dp"
+        android:textAppearance="?android:attr/textAppearanceListItemSmall"
+        android:textColor="@color/secondaryText"
+        tools:text="24м" />
 
-        <TextView
-            android:id="@+id/address"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_below="@id/name"
-            android:paddingBottom="@dimen/interelement"
-            android:paddingLeft="@dimen/activity_horizontal_margin"
-            android:paddingRight="@dimen/activity_horizontal_margin"
-            android:paddingTop="8dp"
-            android:textAppearance="?android:attr/textAppearanceListItemSmall"
-            android:textColor="@color/secondaryText"
-            tools:text="ул. Ленина 54" />
-
-        <TextView
-            android:id="@+id/distance"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_alignParentRight="true"
-            android:drawableLeft="@drawable/ic_near_me_black_24px"
-            android:drawablePadding="4dp"
-            android:gravity="right"
-            android:paddingLeft="@dimen/activity_horizontal_margin"
-            android:paddingRight="@dimen/activity_horizontal_margin"
-            android:paddingTop="24dp"
-            android:textAppearance="?android:attr/textAppearanceListItemSmall"
-            android:textColor="@color/secondaryText"
-            tools:text="24м" />
-
-    </RelativeLayout>
-
-</layout>
+</RelativeLayout>
