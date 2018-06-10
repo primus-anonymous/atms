@@ -2,6 +2,7 @@ apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
 apply plugin: 'kotlin-android-extensions'
 apply plugin: 'kotlin-kapt'
+apply plugin: 'io.fabric'
 
 
 android {
@@ -78,6 +79,10 @@ dependencies {
     implementation "com.google.android.gms:play-services-maps:${playServices}"
     implementation "com.google.android.gms:play-services-location:${playServices}"
     implementation 'com.google.maps.android:android-maps-utils:0.5'
+
+    implementation 'com.crashlytics.sdk.android:crashlytics:2.9.3'
+
+    implementation "com.google.firebase:firebase-core:16.0.0"
 
     def stethos = "1.5.0"
 
