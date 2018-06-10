@@ -30,9 +30,7 @@ class AllowNavigationDialog : DialogFragment() {
 
         const val tag = "AllowNavigationDialog"
 
-        fun instance(): AllowNavigationDialog {
-            return AllowNavigationDialog()
-        }
+        fun instance(): AllowNavigationDialog = AllowNavigationDialog()
     }
 
 }

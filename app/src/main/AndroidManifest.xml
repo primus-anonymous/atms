@@ -21,9 +21,9 @@
         <activity
             android:name="com.neocaptainnemo.atms.ui.MainActivity"
             android:launchMode="singleTop"
-            android:resizeableActivity="false"
             android:screenOrientation="portrait"
-            android:theme="@style/AppTheme">
+            android:theme="@style/AppTheme"
+            android:windowSoftInputMode="adjustPan">
 
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -34,7 +34,6 @@
 
         <meta-data
             android:name="com.google.android.geo.API_KEY"
-            android:value="AIzaSyBvEcb0ZPRkAuhT20YW6n5zxjugDFWWD4o" />
         <meta-data
             android:name="com.google.android.gms.version"
             android:value="@integer/google_play_services_version" />

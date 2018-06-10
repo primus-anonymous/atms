@@ -24,7 +24,7 @@ class SettingsFragment : PreferenceFragmentCompat() {
 
     companion object {
 
-        val TAG = "SettingsFragment"
+        const val tag = "SettingsFragment"
 
         fun instance(): SettingsFragment {
             return SettingsFragment()

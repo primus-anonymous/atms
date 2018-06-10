@@ -3,17 +3,17 @@ package com.neocaptainnemo.atms.ui
 import android.Manifest
 import android.animation.Animator
 import android.animation.AnimatorListenerAdapter
-import android.animation.ArgbEvaluator
-import android.animation.ValueAnimator
+import android.annotation.SuppressLint
+import android.arch.lifecycle.ViewModelProvider
+import android.arch.lifecycle.ViewModelProviders
 import android.content.pm.PackageManager
 import android.location.Location
 import android.os.Bundle
+import android.os.Looper
 import android.support.design.widget.BottomNavigationView
 import android.support.design.widget.BottomSheetBehavior
 import android.support.v4.app.ActivityCompat
 import android.support.v4.content.ContextCompat
-import android.support.v4.view.MenuItemCompat
-import android.support.v4.view.ViewCompat
 import android.support.v4.widget.NestedScrollView
 import android.support.v7.app.AppCompatActivity
 import android.view.Menu
@@ -21,61 +21,73 @@ import android.view.MenuItem
 import android.view.View
 import android.widget.SearchView
 import android.widget.Toast
-import com.google.android.gms.common.ConnectionResult
-import com.google.android.gms.common.api.GoogleApiClient
-import com.google.android.gms.location.LocationRequest
-import com.google.android.gms.location.LocationServices
+import com.google.android.gms.location.*
 import com.google.android.gms.maps.model.LatLng
 import com.google.maps.android.SphericalUtil
+import com.neocaptainnemo.atms.Optional
 import com.neocaptainnemo.atms.R
-import com.neocaptainnemo.atms.app.App
+import com.neocaptainnemo.atms.daggerInject
 import com.neocaptainnemo.atms.model.AtmNode
-import com.neocaptainnemo.atms.model.ViewPort
 import com.neocaptainnemo.atms.service.AddressFormatter
 import com.neocaptainnemo.atms.service.DistanceFormatter
 import com.neocaptainnemo.atms.ui.list.ListFragment
 import com.neocaptainnemo.atms.ui.map.GoogleMapsFragment
-import com.neocaptainnemo.atms.ui.map.IMapView
 import com.neocaptainnemo.atms.ui.settings.SettingsFragment
+import io.reactivex.Observable
+import io.reactivex.disposables.CompositeDisposable
+import io.reactivex.disposables.Disposable
+import io.reactivex.functions.BiFunction
 import kotlinx.android.synthetic.main.activity_main.*
 import javax.inject.Inject
 
-class MainActivity : AppCompatActivity(), BottomNavigationView.OnNavigationItemSelectedListener, IView,
-        IMapView.MapDelegate, GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener,
-        SearchView.OnQueryTextListener, IAtmsView.OnAtmSelected {
+class MainActivity : AppCompatActivity(), BottomNavigationView.OnNavigationItemSelectedListener,
+        SearchView.OnQueryTextListener {
 
-    @Inject
-    lateinit var presenter: Presenter
     @Inject
     lateinit var addressFormatter: AddressFormatter
     @Inject
     lateinit var distanceFormatter: DistanceFormatter
 
-    private var semiTransparentToolBar = false
-    private var atmDetailsBottomSheet: BottomSheetBehavior<NestedScrollView>? = null
+    @Inject
+    lateinit var viewModelFactory: ViewModelProvider.Factory
+
+    private lateinit var viewModel: MainViewModel
+
+    private lateinit var atmDetailsBottomSheet: BottomSheetBehavior<NestedScrollView>
 
     private var selectedAtm: AtmNode? = null
 
-    private var googleApiClient: GoogleApiClient? = null
+    private lateinit var searchView: SearchView
 
-    private var location: Location? = null
+    private lateinit var locationRequest: LocationRequest
 
-    private var searchView: SearchView? = null
-    private val locationListener = LocationListener()
+    private val compositeDisposable = CompositeDisposable()
+
+    private lateinit var tabDisposable: Disposable
+
+    private var searchVisible = false
+
+    private lateinit var fusedLocationClient: FusedLocationProviderClient
+
+    private val locationCallback = object : LocationCallback() {
+
+        override fun onLocationResult(locationResult: LocationResult?) {
+            super.onLocationResult(locationResult)
+
+            val location = locationResult?.lastLocation ?: return
+            viewModel.setLocation(location)
+        }
+    }
+
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        daggerInject()
+
         super.onCreate(savedInstanceState)
 
+        viewModel = ViewModelProviders.of(this, viewModelFactory).get(MainViewModel::class.java)
+
         setContentView(R.layout.activity_main)
-
-        googleApiClient = GoogleApiClient.Builder(this)
-                .addConnectionCallbacks(this)
-                .addOnConnectionFailedListener(this)
-                .addApi(LocationServices.API)
-                .build()
-
-        (application as App).appComponent!!.inject(this)
-        presenter.setView(this)
 
         setSupportActionBar(toolbar)
 
@@ -84,22 +96,29 @@ class MainActivity : AppCompatActivity(), BottomNavigationView.OnNavigationItemS
             if (selectedAtm != null) {
 
                 NavigationDecisionDialogFragment.instance(selectedAtm!!).show(supportFragmentManager,
-                        NavigationDecisionDialogFragment.TAG)
+                        NavigationDecisionDialogFragment.tag)
             }
         }
 
 
         atmDetailsBottomSheet = BottomSheetBehavior.from(atmDetails)
-        atmDetailsBottomSheet!!.peekHeight = 0
+        atmDetailsBottomSheet.peekHeight = 0
         navigate.scaleX = 0f
         navigate.scaleY = 0f
         zoomFurther.scaleX = 0f
         zoomFurther.scaleY = 0f
-        atmDetailsBottomSheet!!.isHideable = true
+        atmDetailsBottomSheet.isHideable = true
         navigate.visibility = View.INVISIBLE
 
-        atmDetailsBottomSheet!!.setBottomSheetCallback(BottomSheetBehaviour())
+        atmDetailsBottomSheet.setBottomSheetCallback(BottomSheetBehaviour())
 
+        fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
+
+
+        locationRequest = LocationRequest()
+        locationRequest.priority = LocationRequest.PRIORITY_BALANCED_POWER_ACCURACY
+        locationRequest.smallestDisplacement = 100.0f
+        locationRequest.interval = 7 * 1000
 
         val accessFineLocation = ContextCompat.checkSelfPermission(this,
                 Manifest.permission.ACCESS_FINE_LOCATION)
@@ -115,44 +134,25 @@ class MainActivity : AppCompatActivity(), BottomNavigationView.OnNavigationItemS
                         arrayOf(Manifest.permission.ACCESS_FINE_LOCATION),
                         locationPermission)
             }
+        } else {
+            viewModel.locationPermission = true
         }
 
-        semiTransparentToolBar = true
 
-        if (savedInstanceState == null) {
+        tabDisposable = viewModel.tabObservable.subscribe {
 
-            supportFragmentManager
-                    .beginTransaction()
-                    .replace(R.id.map_container, GoogleMapsFragment.instance(), GoogleMapsFragment.tag)
-                    .commit()
-
-            supportFragmentManager
-                    .beginTransaction()
-                    .replace(R.id.listContainer, ListFragment.instance(), ListFragment.tag)
-                    .commit()
-
-
-            supportFragmentManager
-                    .beginTransaction()
-                    .replace(R.id.settingsContainer, SettingsFragment.instance(), SettingsFragment.TAG)
-                    .commit()
-
-            presenter.openedTab = Presenter.Tab.MAP
-
-        } else {
-            val openedTab = savedInstanceState.getSerializable("tab") as Presenter.Tab
-            presenter.openedTab = openedTab
+            when (it) {
+                Tab.MAP -> showMap()
+                Tab.LIST -> showList()
+                Tab.SETTINGS -> showSettings()
+            }
         }
 
         if (intent.hasExtra(test)) {
-            presenter.fetchAtms(ViewPort(1.0, 1.0, 1.0, 1.0))
+
         }
     }
 
-    override fun onSaveInstanceState(outState: Bundle) {
-        super.onSaveInstanceState(outState)
-        outState.putSerializable("tab", presenter.openedTab)
-    }
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
         val inflater = menuInflater
@@ -160,86 +160,55 @@ class MainActivity : AppCompatActivity(), BottomNavigationView.OnNavigationItemS
 
         searchView = menu.findItem(R.id.search).actionView as SearchView
 
-        searchView!!.queryHint = getString(R.string.search_hint)
+        searchView.queryHint = getString(R.string.search_hint)
 
-        MenuItemCompat.setOnActionExpandListener(menu.findItem(R.id.search),
-                object : MenuItemCompat.OnActionExpandListener {
+        menu.findItem(R.id.search).setOnActionExpandListener(
+                object : MenuItem.OnActionExpandListener {
                     override fun onMenuItemActionExpand(item: MenuItem): Boolean {
-                        searchView!!.isIconified = false
-                        atmDetailsBottomSheet!!.state = BottomSheetBehavior.STATE_COLLAPSED
+                        searchView.isIconified = false
+                        atmDetailsBottomSheet.state = BottomSheetBehavior.STATE_COLLAPSED
                         return true
                     }
 
                     override fun onMenuItemActionCollapse(item: MenuItem): Boolean {
-                        searchView!!.setQuery("", true)
+                        searchView.setQuery("", true)
                         return true
                     }
                 })
 
-        searchView!!.setOnCloseListener {
-            searchView!!.isIconified = false
+        searchView.setOnCloseListener {
+            searchView.isIconified = false
             true
         }
 
-        searchView!!.setOnQueryTextListener(this)
+        searchView.setOnQueryTextListener(this)
 
         return true
     }
 
-    override fun onConnected(bundle: Bundle?) {
-
-        val accessFineLocation = ContextCompat.checkSelfPermission(this,
-                Manifest.permission.ACCESS_FINE_LOCATION)
-
-        if (accessFineLocation == PackageManager.PERMISSION_GRANTED) {
-
-            location = LocationServices.FusedLocationApi.getLastLocation(
-                    googleApiClient)
-
-            var view: IAtmsView? = GoogleMapsFragment.onStack(supportFragmentManager)
-
-            if (view != null && location != null) {
-                view.setMyLocation(location!!)
-            }
-
-            view = ListFragment.onStack(supportFragmentManager)
-
-            if (view != null && location != null) {
-                view.setMyLocation(location!!)
-            }
-
-            val request = LocationRequest.create()
-
-            LocationServices.FusedLocationApi.requestLocationUpdates(googleApiClient, request,
-                    locationListener)
-        }
+    override fun onPrepareOptionsMenu(menu: Menu?): Boolean {
+        menu?.findItem(R.id.search)?.isVisible = searchVisible
+        return super.onPrepareOptionsMenu(menu)
     }
 
-    override fun onConnectionSuspended(i: Int) {
-        //do nothing
-    }
 
-    override fun onConnectionFailed(connectionResult: ConnectionResult) {
-        //do nothing
-    }
-
+    @SuppressLint("MissingPermission")
     override fun onRequestPermissionsResult(requestCode: Int,
                                             permissions: Array<String>, grantResults: IntArray) {
         when (requestCode) {
             locationPermission -> {
 
                 if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                    val mapView = GoogleMapsFragment.onStack(supportFragmentManager)
 
-                    mapView?.enableMyLocation()
+                    viewModel.locationPermission = true
 
-                    googleApiClient!!.connect()
+                    fusedLocationClient.lastLocation.addOnCompleteListener {
+                        viewModel.setLocation(it.result)
+                    }
 
+                    fusedLocationClient.requestLocationUpdates(locationRequest, locationCallback, Looper.myLooper())
                 } else {
-
-                    val mapView = GoogleMapsFragment.onStack(supportFragmentManager)
-
-                    mapView?.disableMyLocation()
+                    viewModel.locationPermission = false
                 }
             }
         }
@@ -247,40 +216,92 @@ class MainActivity : AppCompatActivity(), BottomNavigationView.OnNavigationItemS
 
     override fun onStart() {
         super.onStart()
-        presenter.onStart()
 
         val accessFineLocation = ContextCompat.checkSelfPermission(this,
                 Manifest.permission.ACCESS_FINE_LOCATION)
 
         if (accessFineLocation == PackageManager.PERMISSION_GRANTED) {
-            googleApiClient!!.connect()
+            fusedLocationClient.requestLocationUpdates(locationRequest, locationCallback, Looper.myLooper())
+
+            viewModel.locationPermission = true
+        } else {
+            viewModel.locationPermission = false
+            viewModel.clearLocation()
         }
+
+        compositeDisposable.add(viewModel.progressObservable.subscribe {
+            progress.visibility = if (it) View.VISIBLE else View.GONE
+        })
+
+        compositeDisposable.add(viewModel.zoomInFurtherObservable.subscribe {
+            if (it) showZoomInFurther() else hideZoomInFurther()
+        })
+
+        compositeDisposable.add(viewModel.errorObservable.subscribe {
+            showError(getString(it))
+        })
+
+        compositeDisposable.add(viewModel.searchVisibilityObservable.subscribe {
+            if (searchVisible != it) {
+                searchVisible = it
+                invalidateOptionsMenu()
+
+                if (!it) {
+                    viewModel.searchQuery = ""
+                }
+            }
+        })
+
+
+        compositeDisposable.add(Observable.combineLatest(viewModel.selectedAtmObservable, viewModel.locationObservable,
+                BiFunction<Optional<AtmNode>, Optional<Location>, Pair<Optional<AtmNode>, Optional<Location>>> { t1, t2 ->
+                    Pair(t1, t2)
+                }).subscribe {
+
+            viewModel.tab = Tab.MAP
+
+            if (it.first.isNotNull()) {
+
+                onAtmSelected(it.first.safeValue())
+
+                selectedAtm = it.first.safeValue()
+
+                updateDistance(it.first.safeValue(), it.second.value)
+            }
+
+        })
+
+
     }
 
     override fun onStop() {
         super.onStop()
-        presenter.onStop()
 
-        if (googleApiClient!!.isConnected) {
-            LocationServices.FusedLocationApi.removeLocationUpdates(googleApiClient, locationListener)
-            googleApiClient!!.disconnect()
-        }
+        fusedLocationClient.removeLocationUpdates(locationCallback)
+
+        compositeDisposable.clear()
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+
+        tabDisposable.dispose()
     }
 
     override fun onNavigationItemSelected(item: MenuItem): Boolean {
         when (item.itemId) {
             R.id.action_maps -> {
-                presenter.openedTab = Presenter.Tab.MAP
+                viewModel.tab = Tab.MAP
                 return true
             }
 
             R.id.action_list -> {
-                presenter.openedTab = Presenter.Tab.LIST
+                viewModel.tab = Tab.LIST
                 return true
             }
 
             R.id.action_settings -> {
-                presenter.openedTab = Presenter.Tab.SETTINGS
+                viewModel.tab = Tab.SETTINGS
                 return true
             }
         }
@@ -289,52 +310,18 @@ class MainActivity : AppCompatActivity(), BottomNavigationView.OnNavigationItemS
 
     override fun onBackPressed() {
         when {
-            atmDetailsBottomSheet!!.state != BottomSheetBehavior.STATE_COLLAPSED -> atmDetailsBottomSheet!!.setState(BottomSheetBehavior.STATE_COLLAPSED)
-            presenter.openedTab !== Presenter.Tab.MAP -> presenter.openedTab = Presenter.Tab.MAP
+            atmDetailsBottomSheet.state != BottomSheetBehavior.STATE_COLLAPSED -> atmDetailsBottomSheet.setState(BottomSheetBehavior.STATE_COLLAPSED)
+            viewModel.tab !== Tab.MAP -> viewModel.tab = Tab.MAP
             else -> super.onBackPressed()
         }
     }
 
 
-    override fun onGotViewPort(viewPort: ViewPort) {
-        presenter!!.fetchAtms(viewPort)
-        hideZoomInFurther()
-    }
+    private fun showError(errorMsg: String) =
+            Toast.makeText(this, errorMsg, Toast.LENGTH_LONG).show()
 
-    override fun onZoomFurther() {
-        showZoomInFurther()
-    }
 
-    override fun onGotAtms(atmNodes: List<AtmNode>) {
-
-        var view: IAtmsView? = GoogleMapsFragment.onStack(supportFragmentManager)
-
-        if (view != null) {
-            view.clear()
-            view.showAtms(atmNodes)
-        }
-
-        view = ListFragment.onStack(supportFragmentManager)
-
-        if (view != null) {
-            view.clear()
-            view.showAtms(atmNodes)
-        }
-    }
-
-    override fun showProgress() {
-        progress.visibility = View.VISIBLE
-    }
-
-    override fun hideProgress() {
-        progress.visibility = View.GONE
-    }
-
-    override fun showError(errorMsg: String) {
-        Toast.makeText(this, errorMsg, Toast.LENGTH_LONG).show()
-    }
-
-    override fun showZoomInFurther() {
+    private fun showZoomInFurther() {
         zoomFurther.visibility = View.VISIBLE
         zoomFurther
                 .animate()
@@ -345,7 +332,7 @@ class MainActivity : AppCompatActivity(), BottomNavigationView.OnNavigationItemS
                 .start()
     }
 
-    override fun hideZoomInFurther() {
+    private fun hideZoomInFurther() {
         zoomFurther
                 .animate()
                 .scaleX(0f)
@@ -360,70 +347,103 @@ class MainActivity : AppCompatActivity(), BottomNavigationView.OnNavigationItemS
                 .start()
     }
 
-    override fun showMap() {
-        if (!semiTransparentToolBar) {
-            animateColorChange(R.color.colorPrimary, R.color.colorPrimarySemi)
+    private fun showMap() {
+
+        val ft = supportFragmentManager.beginTransaction()
+
+        val mapFragment = supportFragmentManager.findFragmentByTag(GoogleMapsFragment.tag)
+
+        if (mapFragment == null) {
+            ft.add(R.id.container, GoogleMapsFragment.instance(), GoogleMapsFragment.tag)
+        } else if (mapFragment.isHidden) {
+            ft.show(mapFragment)
         }
-        semiTransparentToolBar = true
 
-        ViewCompat.setElevation(appbar, resources.getDimension(R.dimen.app_bar_elevation))
+        val listFragment = supportFragmentManager.findFragmentByTag(ListFragment.tag)
 
-        listContainer.visibility = View.GONE
-        settingsContainer.visibility = View.GONE
+        if (listFragment != null && !listFragment.isHidden) {
+            ft.hide(listFragment)
+        }
+
+        val settingsFragment = supportFragmentManager.findFragmentByTag(SettingsFragment.tag)
+
+        if (settingsFragment != null && !settingsFragment.isHidden) {
+            ft.hide(settingsFragment)
+        }
+
+        ft.commit()
     }
 
-    override fun showList() {
+    private fun showList() {
         zoomFurther.visibility = View.GONE
-        if (semiTransparentToolBar) {
-            animateColorChange(android.R.color.transparent, R.color.colorPrimary)
+
+        val ft = supportFragmentManager.beginTransaction()
+
+        val listFragment = supportFragmentManager.findFragmentByTag(ListFragment.tag)
+
+        if (listFragment == null) {
+            ft.add(R.id.container, ListFragment.instance(), ListFragment.tag)
+        } else if (listFragment.isHidden) {
+            ft.show(listFragment)
+
         }
-        semiTransparentToolBar = false
-        ViewCompat.setElevation(appbar, resources.getDimension(R.dimen.app_bar_elevation))
 
+        val mapFragment = supportFragmentManager.findFragmentByTag(GoogleMapsFragment.tag)
 
-        listContainer.visibility = View.VISIBLE
-        settingsContainer.visibility = View.GONE
+        if (mapFragment != null && !mapFragment.isHidden) {
+            ft.hide(mapFragment)
+        }
+
+        val settingsFragment = supportFragmentManager.findFragmentByTag(SettingsFragment.tag)
+
+        if (settingsFragment != null && !settingsFragment.isHidden) {
+            ft.hide(settingsFragment)
+        }
+
+        ft.commit()
     }
 
-    override fun showSettings() {
+    private fun showSettings() {
         zoomFurther.visibility = View.GONE
-        if (semiTransparentToolBar) {
-            animateColorChange(android.R.color.transparent, R.color.colorPrimary)
+
+        val ft = supportFragmentManager.beginTransaction()
+
+        val settingsFragment = supportFragmentManager.findFragmentByTag(SettingsFragment.tag)
+
+        if (settingsFragment == null) {
+            ft.add(R.id.container, SettingsFragment.instance(), SettingsFragment.tag)
+        } else if (settingsFragment.isHidden) {
+            ft.show(settingsFragment)
         }
-        semiTransparentToolBar = false
-        ViewCompat.setElevation(appbar, resources.getDimension(R.dimen.app_bar_elevation))
 
-        listContainer.visibility = View.GONE
-        settingsContainer.visibility = View.VISIBLE
+        val mapFragment = supportFragmentManager.findFragmentByTag(GoogleMapsFragment.tag)
+
+        if (mapFragment != null && !mapFragment.isHidden) {
+            ft.hide(mapFragment)
+        }
+
+        val listFragment = supportFragmentManager.findFragmentByTag(ListFragment.tag)
+
+        if (listFragment != null && !listFragment.isHidden) {
+            ft.hide(listFragment)
+        }
+
+        ft.commit()
     }
 
-    override fun onQueryTextSubmit(str: String): Boolean {
-        return false
-    }
+    override fun onQueryTextSubmit(str: String): Boolean = false
 
     override fun onQueryTextChange(str: String): Boolean {
-        presenter!!.setFilter(str)
+        viewModel.searchQuery = str
         return true
     }
 
-    override fun onAtmSelected(atmNode: AtmNode, src: String) {
-
-        val mapView = GoogleMapsFragment.onStack(supportFragmentManager)
-
-        if (mapView != null) {
-            mapView.selectAtm(atmNode)
-            if (ListFragment.tag == src) {
-                mapView.moveCameraToAtm(atmNode)
-            }
-            showMap()
-        }
-
-        selectedAtm = atmNode
+    private fun onAtmSelected(atmNode: AtmNode) {
 
         atmName.text = atmNode.tags!!.name
-        atmDetailsBottomSheet!!.state = BottomSheetBehavior.STATE_EXPANDED
+        atmDetailsBottomSheet.state = BottomSheetBehavior.STATE_EXPANDED
 
-        val address = addressFormatter!!.format(atmNode)
+        val address = addressFormatter.format(atmNode)
 
         if (address.isEmpty()) {
             atmAddress.setText(R.string.no_address)
@@ -431,58 +451,30 @@ class MainActivity : AppCompatActivity(), BottomNavigationView.OnNavigationItemS
             atmAddress.text = address
         }
 
-        updateDistance()
-
     }
 
-    private fun updateDistance() {
-        if (selectedAtm != null && location != null) {
+    private fun updateDistance(atmNode: AtmNode, location: Location?) {
+        if (location != null) {
 
-            val calcualtedDistance = SphericalUtil.computeDistanceBetween(LatLng(selectedAtm!!.lat, selectedAtm!!.lon),
-                    LatLng(location!!.latitude, location!!.longitude))
+            val calculatedDistance = SphericalUtil.computeDistanceBetween(LatLng(atmNode.lat, atmNode.lon),
+                    LatLng(location.latitude, location.longitude))
 
-            val fromYou = getString(R.string.distance_m_from_you, distanceFormatter.format(calcualtedDistance))
-            distance.text = fromYou
+            val fromYou = getString(R.string.distance_m_from_you, distanceFormatter.format(calculatedDistance))
+            bottomSheetAtmDistance.text = fromYou
         } else {
-            distance.setText(R.string.location_disabled)
+            bottomSheetAtmDistance.setText(R.string.location_disabled)
         }
     }
 
-    private fun animateColorChange(from: Int, to: Int) {
-        val colorFrom = ContextCompat.getColor(this, from)
-        val colorTo = ContextCompat.getColor(this, to)
-        val colorAnimation = ValueAnimator.ofObject(ArgbEvaluator(), colorFrom, colorTo)
-        colorAnimation.duration = resources.getInteger(android.R.integer.config_mediumAnimTime).toLong()
-        colorAnimation.addUpdateListener { animator -> toolbar.setBackgroundColor(animator.animatedValue as Int) }
-        colorAnimation.start()
-    }
-
-
-    private inner class LocationListener : com.google.android.gms.location.LocationListener {
-
-        override fun onLocationChanged(location: Location) {
-
-            this@MainActivity.location = location
-
-            val view = ListFragment.onStack(supportFragmentManager)
-
-            view?.setMyLocation(location)
-
-            updateDistance()
-
-        }
-    }
 
     private inner class BottomSheetBehaviour : BottomSheetBehavior.BottomSheetCallback() {
         override fun onStateChanged(bottomSheet: View, newState: Int) {
-            if (newState == BottomSheetBehavior.STATE_COLLAPSED) {
+            when (newState) {
+                BottomSheetBehavior.STATE_COLLAPSED -> {
 
-                val mapView = GoogleMapsFragment.onStack(supportFragmentManager)
-
-                mapView?.clearSelectedMarker()
-
-            } else if (newState == BottomSheetBehavior.STATE_EXPANDED) {
-                navigate.animate().scaleX(1f).scaleY(1f)
+                    viewModel.clearAtm()
+                }
+                BottomSheetBehavior.STATE_EXPANDED -> navigate.animate().scaleX(1f).scaleY(1f)
                         .setDuration(resources.getInteger(android.R.integer.config_shortAnimTime).toLong())
                         .setListener(object : AnimatorListenerAdapter() {
                             override fun onAnimationStart(animation: Animator) {
@@ -492,8 +484,7 @@ class MainActivity : AppCompatActivity(), BottomNavigationView.OnNavigationItemS
                         })
 
                         .start()
-            } else {
-                navigate.animate().scaleX(0f).scaleY(0f)
+                else -> navigate.animate().scaleX(0f).scaleY(0f)
                         .setDuration(resources.getInteger(android.R.integer.config_shortAnimTime).toLong())
                         .setListener(object : AnimatorListenerAdapter() {
                             override fun onAnimationEnd(animation: Animator) {

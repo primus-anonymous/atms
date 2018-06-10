@@ -1,16 +1,33 @@
 package com.neocaptainnemo.atms.model
 
-class ViewPort(val lngStart: Double, val latStart: Double, val lngEnd: Double, val latEnd: Double) {
+import com.google.android.gms.maps.model.LatLng
+import com.google.maps.android.SphericalUtil
 
-    fun isInside(another: ViewPort): Boolean {
-        return another.lngStart >= lngStart &&
-                another.lngStart <= lngEnd &&
-                another.latStart >= latStart &&
-                another.latStart <= latEnd &&
+data class ViewPort(val lngStart: Double, val latStart: Double, val lngEnd: Double, val latEnd: Double) {
 
-                another.lngEnd >= lngStart &&
-                another.lngEnd <= lngEnd &&
-                another.latEnd >= latStart &&
-                another.latEnd <= latEnd
+    fun isInside(another: ViewPort): Boolean =
+            another.lngStart >= lngStart &&
+                    another.lngStart <= lngEnd &&
+                    another.latStart >= latStart &&
+                    another.latStart <= latEnd &&
+
+                    another.lngEnd >= lngStart &&
+                    another.lngEnd <= lngEnd &&
+                    another.latEnd >= latStart &&
+                    another.latEnd <= latEnd
+
+    fun extended(): ViewPort {
+
+        val southWest = SphericalUtil.computeOffset(LatLng(latStart, lngStart), 3000.0, 245.0)
+
+        val startLng = southWest.longitude
+        val startLat = southWest.latitude
+
+        val northeast = SphericalUtil.computeOffset(LatLng(latEnd, lngEnd), 3000.0, 45.0)
+
+        val endLng = northeast.longitude
+        val endLat = northeast.latitude
+
+        return ViewPort(startLng, startLat, endLng, endLat)
     }
 }
