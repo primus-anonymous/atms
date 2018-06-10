@@ -28,6 +28,7 @@ import com.neocaptainnemo.atms.Optional
 import com.neocaptainnemo.atms.R
 import com.neocaptainnemo.atms.daggerInject
 import com.neocaptainnemo.atms.model.AtmNode
+import com.neocaptainnemo.atms.model.ViewPort
 import com.neocaptainnemo.atms.service.AddressFormatter
 import com.neocaptainnemo.atms.service.DistanceFormatter
 import com.neocaptainnemo.atms.ui.list.ListFragment
@@ -149,6 +150,8 @@ class MainActivity : AppCompatActivity(), BottomNavigationView.OnNavigationItemS
         }
 
         if (intent.hasExtra(test)) {
+
+            viewModel.viewPort = ViewPort(1.0, 1.0, 1.0, 1.0)
 
         }
     }

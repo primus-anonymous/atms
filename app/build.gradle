@@ -95,30 +95,25 @@ dependencies {
     testImplementation 'org.hamcrest:hamcrest-all:1.3'
     testImplementation 'org.assertj:assertj-core:1.7.0'
 
-    def espresos = "2.2.2"
+    def espresos = "3.0.2"
 
-    androidTestCompile("com.android.support.test.espresso:espresso-core:${espresos}", {
-        exclude group: 'com.android.support', module: 'support-annotations'
-    })
-    androidTestCompile "com.android.support.test:runner:1.0.2"
-    androidTestCompile "com.android.support.test:rules:1.0.2"
-    androidTestCompile "com.android.support.test.espresso:espresso-intents:${espresos}"
+    androidTestImplementation "com.android.support.test.espresso:espresso-core:${espresos}"
 
-    androidTestCompile("com.android.support.test.espresso:espresso-contrib:${espresos}") {
-        exclude group: 'com.android.support', module: 'appcompat'
-        exclude group: 'com.android.support', module: 'support-v4'
-        exclude group: 'com.android.support', module: 'support-annotations'
-        exclude group: 'com.android.support', module: 'design'
-        exclude module: 'recyclerview-v7'
+    androidTestImplementation "com.android.support.test:runner:1.0.2"
+    androidTestImplementation "com.android.support.test:rules:1.0.2"
+    androidTestImplementation "com.android.support.test.espresso:espresso-intents:${espresos}"
+
+    androidTestImplementation "com.android.support.test.espresso:espresso-contrib:${espresos}"
+    kaptAndroidTest "com.google.dagger:dagger-compiler:${dagger}"
+
+    androidTestImplementation "com.android.support:support-annotations:${appCompats}"
+
+    androidTestImplementation "org.mockito:mockito-android:${mockitos}"
+    androidTestImplementation('com.nhaarman:mockito-kotlin-kt1.1:1.5.0') {
+        exclude group: 'org.jetbrains.kotlin'
     }
 
-    androidTestAnnotationProcessor "com.google.dagger:dagger-compiler:${dagger}"
-    androidTestCompile "com.android.support:support-annotations:${appCompats}"
-    androidTestCompile "org.mockito:mockito-android:${mockitos}"
-}
-
-repositories {
-    mavenCentral()
+    androidTestImplementation 'com.squareup.rx.idler:rx2-idler:0.9.0'
 }
 
 apply plugin: 'com.google.gms.google-services'

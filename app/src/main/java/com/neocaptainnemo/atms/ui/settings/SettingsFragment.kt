@@ -14,20 +14,19 @@ class SettingsFragment : PreferenceFragmentCompat() {
 
     }
 
-     override fun onBindPreferences() {
-         super.onBindPreferences()
+    override fun onStart() {
+        super.onStart()
 
-         val summary = findPreference("summary") as PreferenceScreen
+        val summary = findPreference("summary") as PreferenceScreen
 
-         summary.summary = getString(R.string.settings_rate_about_summary, BuildConfig.VERSION_NAME, BuildConfig.VERSION_CODE)
-     }
+        summary.summary = getString(R.string.settings_rate_about_summary, BuildConfig.VERSION_NAME, BuildConfig.VERSION_CODE)
+
+    }
 
     companion object {
 
         const val tag = "SettingsFragment"
 
-        fun instance(): SettingsFragment {
-            return SettingsFragment()
-        }
+        fun instance(): SettingsFragment = SettingsFragment()
     }
 }

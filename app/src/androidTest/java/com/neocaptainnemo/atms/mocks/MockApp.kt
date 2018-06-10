@@ -1,17 +1,15 @@
-package com.neocaptainnemo.atms.app
+package com.neocaptainnemo.atms.mocks
 
 import android.app.Activity
 import android.app.Application
 import android.support.v4.app.Fragment
-
-import com.facebook.stetho.Stetho
 import dagger.android.AndroidInjector
 import dagger.android.DispatchingAndroidInjector
 import dagger.android.HasActivityInjector
 import dagger.android.support.HasSupportFragmentInjector
 import javax.inject.Inject
 
-open class App : Application(), HasActivityInjector, HasSupportFragmentInjector {
+class MockApp : Application(), HasActivityInjector, HasSupportFragmentInjector {
 
     @Inject
     lateinit var activityInjector: DispatchingAndroidInjector<Activity>
@@ -19,18 +17,21 @@ open class App : Application(), HasActivityInjector, HasSupportFragmentInjector 
     @Inject
     lateinit var supportFragmentInjector: DispatchingAndroidInjector<Fragment>
 
+    lateinit var component: MockAppComponent
+
     override fun onCreate() {
         super.onCreate()
-        Stetho.initializeWithDefaults(this)
 
-        DaggerAppComponent
+        component = DaggerMockAppComponent
                 .builder()
                 .application(this)
                 .build()
-                .inject(this)
+
+        component.inject(this)
     }
 
     override fun supportFragmentInjector(): AndroidInjector<Fragment> = supportFragmentInjector
 
     override fun activityInjector(): AndroidInjector<Activity> = activityInjector
+
 }

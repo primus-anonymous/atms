@@ -1,0 +1,12 @@
+<component name="libraryTable">
+  <library name="Gradle: com.squareup.rx.idler:rx2-idler-0.9.0">
+    <CLASSES>
+      <root url="jar://$USER_HOME$/.gradle/caches/transforms-1/files-1.1/rx2-idler-0.9.0.aar/56d1b29a7db39036affca0a80ca9a226/jars/classes.jar!/" />
+      <root url="file://$USER_HOME$/.gradle/caches/transforms-1/files-1.1/rx2-idler-0.9.0.aar/56d1b29a7db39036affca0a80ca9a226/res" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES>
+      <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/com.squareup.rx.idler/rx2-idler/0.9.0/7ea92a3de1bcd62b7a9bbffa06ed4948df0c54da/rx2-idler-0.9.0-sources.jar!/" />
+    </SOURCES>
+  </library>
+</component>

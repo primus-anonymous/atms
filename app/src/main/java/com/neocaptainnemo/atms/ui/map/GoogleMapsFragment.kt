@@ -97,7 +97,6 @@ class GoogleMapsFragment : Fragment(), OnMapReadyCallback, GoogleMap.OnMarkerCli
 
         viewModel.zoom = zoomLevel
 
-
         val bounds = map!!.projection.visibleRegion.latLngBounds
 
         val southWest = bounds.southwest
@@ -141,7 +140,7 @@ class GoogleMapsFragment : Fragment(), OnMapReadyCallback, GoogleMap.OnMarkerCli
 
         compositeDisposable.add(viewModel.locationObservable.subscribe {
             if (it.isNotNull()) {
-                setMyLocation(it.value!!)
+                setMyLocation(it.safeValue())
             }
         })
 
