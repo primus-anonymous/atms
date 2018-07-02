@@ -16,7 +16,6 @@ import android.support.v4.app.ActivityCompat
 import android.support.v4.content.ContextCompat
 import android.support.v4.widget.NestedScrollView
 import android.support.v7.app.AppCompatActivity
-import android.view.Menu
 import android.view.MenuItem
 import android.view.View
 import android.widget.SearchView
@@ -28,11 +27,14 @@ import com.neocaptainnemo.atms.Optional
 import com.neocaptainnemo.atms.R
 import com.neocaptainnemo.atms.daggerInject
 import com.neocaptainnemo.atms.model.AtmNode
+import com.neocaptainnemo.atms.model.MapType
 import com.neocaptainnemo.atms.model.ViewPort
 import com.neocaptainnemo.atms.service.AddressFormatter
 import com.neocaptainnemo.atms.service.DistanceFormatter
+import com.neocaptainnemo.atms.service.ISettings
 import com.neocaptainnemo.atms.ui.list.ListFragment
 import com.neocaptainnemo.atms.ui.map.GoogleMapsFragment
+import com.neocaptainnemo.atms.ui.map.YandexMapsFragment
 import com.neocaptainnemo.atms.ui.settings.SettingsFragment
 import io.reactivex.Observable
 import io.reactivex.disposables.CompositeDisposable
@@ -46,11 +48,15 @@ class MainActivity : AppCompatActivity(), BottomNavigationView.OnNavigationItemS
 
     @Inject
     lateinit var addressFormatter: AddressFormatter
+
     @Inject
     lateinit var distanceFormatter: DistanceFormatter
 
     @Inject
     lateinit var viewModelFactory: ViewModelProvider.Factory
+
+    @Inject
+    lateinit var settings: ISettings
 
     private lateinit var viewModel: MainViewModel
 
@@ -58,15 +64,11 @@ class MainActivity : AppCompatActivity(), BottomNavigationView.OnNavigationItemS
 
     private var selectedAtm: AtmNode? = null
 
-    private lateinit var searchView: SearchView
-
     private lateinit var locationRequest: LocationRequest
 
     private val compositeDisposable = CompositeDisposable()
 
     private lateinit var tabDisposable: Disposable
-
-    private var searchVisible = false
 
     private lateinit var fusedLocationClient: FusedLocationProviderClient
 
@@ -89,8 +91,6 @@ class MainActivity : AppCompatActivity(), BottomNavigationView.OnNavigationItemS
         viewModel = ViewModelProviders.of(this, viewModelFactory).get(MainViewModel::class.java)
 
         setContentView(R.layout.activity_main)
-
-        setSupportActionBar(toolbar)
 
         bottomNavigation.setOnNavigationItemSelectedListener(this)
         navigate.setOnClickListener { _ ->
@@ -149,49 +149,19 @@ class MainActivity : AppCompatActivity(), BottomNavigationView.OnNavigationItemS
             }
         }
 
+        floatingSearchView.setOnQueryChangeListener { oldQuery, newQuery ->
+
+            if (oldQuery != newQuery) {
+                viewModel.searchQuery = newQuery
+            }
+
+        }
+
         if (intent.hasExtra(test)) {
 
             viewModel.viewPort = ViewPort(1.0, 1.0, 1.0, 1.0)
 
         }
-    }
-
-
-    override fun onCreateOptionsMenu(menu: Menu): Boolean {
-        val inflater = menuInflater
-        inflater.inflate(R.menu.app_bar, menu)
-
-        searchView = menu.findItem(R.id.search).actionView as SearchView
-
-        searchView.queryHint = getString(R.string.search_hint)
-
-        menu.findItem(R.id.search).setOnActionExpandListener(
-                object : MenuItem.OnActionExpandListener {
-                    override fun onMenuItemActionExpand(item: MenuItem): Boolean {
-                        searchView.isIconified = false
-                        atmDetailsBottomSheet.state = BottomSheetBehavior.STATE_COLLAPSED
-                        return true
-                    }
-
-                    override fun onMenuItemActionCollapse(item: MenuItem): Boolean {
-                        searchView.setQuery("", true)
-                        return true
-                    }
-                })
-
-        searchView.setOnCloseListener {
-            searchView.isIconified = false
-            true
-        }
-
-        searchView.setOnQueryTextListener(this)
-
-        return true
-    }
-
-    override fun onPrepareOptionsMenu(menu: Menu?): Boolean {
-        menu?.findItem(R.id.search)?.isVisible = searchVisible
-        return super.onPrepareOptionsMenu(menu)
     }
 
 
@@ -245,14 +215,7 @@ class MainActivity : AppCompatActivity(), BottomNavigationView.OnNavigationItemS
         })
 
         compositeDisposable.add(viewModel.searchVisibilityObservable.subscribe {
-            if (searchVisible != it) {
-                searchVisible = it
-                invalidateOptionsMenu()
-
-                if (!it) {
-                    viewModel.searchQuery = ""
-                }
-            }
+            floatingSearchView.visibility = if (it) View.VISIBLE else View.GONE
         })
 
 
@@ -261,9 +224,10 @@ class MainActivity : AppCompatActivity(), BottomNavigationView.OnNavigationItemS
                     Pair(t1, t2)
                 }).subscribe {
 
-            viewModel.tab = Tab.MAP
 
             if (it.first.isNotNull()) {
+
+                viewModel.tab = Tab.MAP
 
                 onAtmSelected(it.first.safeValue())
 
@@ -354,13 +318,41 @@ class MainActivity : AppCompatActivity(), BottomNavigationView.OnNavigationItemS
 
         val ft = supportFragmentManager.beginTransaction()
 
-        val mapFragment = supportFragmentManager.findFragmentByTag(GoogleMapsFragment.tag)
+        val mapType = settings.mapType
 
-        if (mapFragment == null) {
-            ft.add(R.id.container, GoogleMapsFragment.instance(), GoogleMapsFragment.tag)
-        } else if (mapFragment.isHidden) {
-            ft.show(mapFragment)
+        if (mapType == MapType.GOOGLE) {
+
+            val yandexFragment = supportFragmentManager.findFragmentByTag(YandexMapsFragment.tag)
+
+            if (yandexFragment != null) {
+                ft.remove(yandexFragment)
+            }
+
+            val mapFragment = supportFragmentManager.findFragmentByTag(GoogleMapsFragment.tag)
+
+            if (mapFragment == null) {
+                ft.add(R.id.container, GoogleMapsFragment.instance(), GoogleMapsFragment.tag)
+            } else if (mapFragment.isHidden) {
+                ft.show(mapFragment)
+            }
+
+        } else {
+
+            val googleFragment = supportFragmentManager.findFragmentByTag(GoogleMapsFragment.tag)
+
+            if (googleFragment != null) {
+                ft.remove(googleFragment)
+            }
+
+            val mapFragment = supportFragmentManager.findFragmentByTag(YandexMapsFragment.tag)
+
+            if (mapFragment == null) {
+                ft.add(R.id.container, YandexMapsFragment.instance(), YandexMapsFragment.tag)
+            } else if (mapFragment.isHidden) {
+                ft.show(mapFragment)
+            }
         }
+
 
         val listFragment = supportFragmentManager.findFragmentByTag(ListFragment.tag)
 
@@ -378,7 +370,6 @@ class MainActivity : AppCompatActivity(), BottomNavigationView.OnNavigationItemS
     }
 
     private fun showList() {
-        zoomFurther.visibility = View.GONE
 
         val ft = supportFragmentManager.beginTransaction()
 
@@ -391,11 +382,18 @@ class MainActivity : AppCompatActivity(), BottomNavigationView.OnNavigationItemS
 
         }
 
-        val mapFragment = supportFragmentManager.findFragmentByTag(GoogleMapsFragment.tag)
+        val yandexMap = supportFragmentManager.findFragmentByTag(YandexMapsFragment.tag)
 
-        if (mapFragment != null && !mapFragment.isHidden) {
-            ft.hide(mapFragment)
+        if (yandexMap != null && !yandexMap.isHidden) {
+            ft.hide(yandexMap)
         }
+
+        val googleMap = supportFragmentManager.findFragmentByTag(GoogleMapsFragment.tag)
+
+        if (googleMap != null && !googleMap.isHidden) {
+            ft.hide(googleMap)
+        }
+
 
         val settingsFragment = supportFragmentManager.findFragmentByTag(SettingsFragment.tag)
 
@@ -407,7 +405,6 @@ class MainActivity : AppCompatActivity(), BottomNavigationView.OnNavigationItemS
     }
 
     private fun showSettings() {
-        zoomFurther.visibility = View.GONE
 
         val ft = supportFragmentManager.beginTransaction()
 
@@ -419,10 +416,16 @@ class MainActivity : AppCompatActivity(), BottomNavigationView.OnNavigationItemS
             ft.show(settingsFragment)
         }
 
-        val mapFragment = supportFragmentManager.findFragmentByTag(GoogleMapsFragment.tag)
+        val yandexMap = supportFragmentManager.findFragmentByTag(YandexMapsFragment.tag)
 
-        if (mapFragment != null && !mapFragment.isHidden) {
-            ft.hide(mapFragment)
+        if (yandexMap != null && !yandexMap.isHidden) {
+            ft.hide(yandexMap)
+        }
+
+        val googleMap = supportFragmentManager.findFragmentByTag(GoogleMapsFragment.tag)
+
+        if (googleMap != null && !googleMap.isHidden) {
+            ft.hide(googleMap)
         }
 
         val listFragment = supportFragmentManager.findFragmentByTag(ListFragment.tag)

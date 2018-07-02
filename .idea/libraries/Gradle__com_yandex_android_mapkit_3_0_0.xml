@@ -1,0 +1,10 @@
+<component name="libraryTable">
+  <library name="Gradle: com.yandex.android:mapkit-3.0.0">
+    <CLASSES>
+      <root url="jar://$USER_HOME$/.gradle/caches/transforms-1/files-1.1/mapkit-3.0.0.aar/ffeec63c692b331e81efce5e8f0abb60/jars/classes.jar!/" />
+      <root url="file://$USER_HOME$/.gradle/caches/transforms-1/files-1.1/mapkit-3.0.0.aar/ffeec63c692b331e81efce5e8f0abb60/res" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>

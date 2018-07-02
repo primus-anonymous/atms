@@ -7,4 +7,5 @@
     <dimen name="app_bar_height">56dp</dimen>
     <dimen name="interelement_half">8dp</dimen>
     <dimen name="interelement">16dp</dimen>
+    <dimen name="map_padding_top">64dp</dimen>
 </resources>

@@ -12,29 +12,35 @@ import android.view.View
 import android.view.ViewGroup
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
-import com.google.android.gms.maps.OnMapReadyCallback
 import com.google.android.gms.maps.SupportMapFragment
-import com.google.android.gms.maps.model.*
+import com.google.android.gms.maps.model.BitmapDescriptorFactory
+import com.google.android.gms.maps.model.LatLng
+import com.google.android.gms.maps.model.LatLngBounds
+import com.google.android.gms.maps.model.Marker
 import com.google.maps.android.clustering.Cluster
 import com.google.maps.android.clustering.ClusterManager
 import com.google.maps.android.clustering.view.DefaultClusterRenderer
+import com.neocaptainnemo.atms.Optional
 import com.neocaptainnemo.atms.R
 import com.neocaptainnemo.atms.daggerInject
 import com.neocaptainnemo.atms.model.AtmNode
 import com.neocaptainnemo.atms.model.ViewPort
 import com.neocaptainnemo.atms.ui.MainViewModel
+import io.reactivex.Observable
 import io.reactivex.disposables.CompositeDisposable
+import io.reactivex.functions.BiFunction
 import javax.inject.Inject
 
-class GoogleMapsFragment : Fragment(), OnMapReadyCallback, GoogleMap.OnMarkerClickListener,
+class GoogleMapsFragment : Fragment(), GoogleMap.OnMarkerClickListener,
         ClusterManager.OnClusterClickListener<AtmNode>, GoogleMap.OnCameraIdleListener {
 
-    private var map: GoogleMap? = null
+    private lateinit var map: GoogleMap
     private var selectedAtm: AtmNode? = null
-    private var selectedMarker: Marker? = null
     private var locationSet = false
 
     private lateinit var clusterManager: ClusterManager<AtmNode>
+
+    private lateinit var rxGoogleMap: RxGoogleMap
 
     @Inject
     lateinit var viewModelFactory: ViewModelProvider.Factory
@@ -42,6 +48,7 @@ class GoogleMapsFragment : Fragment(), OnMapReadyCallback, GoogleMap.OnMarkerCli
     private lateinit var viewModel: MainViewModel
 
     private val compositeDisposable = CompositeDisposable()
+
 
     override fun onAttach(context: Context?) {
 
@@ -63,41 +70,23 @@ class GoogleMapsFragment : Fragment(), OnMapReadyCallback, GoogleMap.OnMarkerCli
         val mapFragment = childFragmentManager
                 .findFragmentById(R.id.map) as SupportMapFragment
 
-        mapFragment.getMapAsync(this)
+        rxGoogleMap = RxGoogleMap(mapFragment)
+
     }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View =
             inflater.inflate(R.layout.fragment_google_maps, container, false)
 
-    @SuppressLint("MissingPermission")
-    override fun onMapReady(googleMap: GoogleMap) {
-
-        clusterManager = ClusterManager(context, googleMap)
-        clusterManager.renderer = AtmRenderer(context!!, googleMap, clusterManager)
-        clusterManager.setOnClusterClickListener(this)
-        map = googleMap
-
-        googleMap.setOnMarkerClickListener(this)
-
-        googleMap.setPadding(0, 0, 0, 0)
-
-        googleMap.setOnCameraIdleListener(this)
-
-        googleMap.isMyLocationEnabled = viewModel.locationPermission
-
-    }
 
     override fun onCameraIdle() {
 
-        if (map == null) return
-
         clusterManager.cluster()
 
-        val zoomLevel = map!!.cameraPosition.zoom
+        val zoomLevel = map.cameraPosition.zoom
 
         viewModel.zoom = zoomLevel
 
-        val bounds = map!!.projection.visibleRegion.latLngBounds
+        val bounds = map.projection.visibleRegion.latLngBounds
 
         val southWest = bounds.southwest
 
@@ -119,34 +108,85 @@ class GoogleMapsFragment : Fragment(), OnMapReadyCallback, GoogleMap.OnMarkerCli
     override fun onStart() {
         super.onStart()
 
-        compositeDisposable.add(viewModel.atms().subscribe({
+        val dataSrc = Observable.combineLatest(viewModel.atms(), viewModel.selectedAtmObservable,
+                BiFunction<List<AtmNode>, Optional<AtmNode>, Pair<List<AtmNode>, Optional<AtmNode>>> { atms, selected ->
 
-            clusterManager.clearItems()
-            clusterManager.addItems(it)
-            clusterManager.cluster()
+                    Pair(atms, selected)
+                })
 
-        }, {
-            //do nothing
-        }))
+        compositeDisposable.add(rxGoogleMap.map()
+                .doOnNext {
 
-        compositeDisposable.add(viewModel.selectedAtmObservable.subscribe {
-            clearSelectedMarker()
+                    map = it
 
-            if (it.isNotNull()) {
-                selectAtm(it.value!!)
-                moveCameraToAtm(it.value)
+                    if (!::clusterManager.isInitialized) {
+                        clusterManager = ClusterManager(context, it)
+                        clusterManager.renderer = AtmRenderer(context!!, it, clusterManager)
+                        clusterManager.setOnClusterClickListener(this)
+
+                    }
+                    it.setOnMarkerClickListener(this)
+
+                    it.setPadding(0, resources.getDimension(R.dimen.map_padding_top).toInt(), 0, 0)
+
+                    it.setOnCameraIdleListener(this)
+
+
+                }.flatMap { dataSrc }
+                .subscribe {
+
+                    selectedAtm = it.second.value
+
+                    clusterManager.clearItems()
+                    clusterManager.addItems(it.first)
+
+                    clusterManager.cluster()
+
+                })
+
+
+        compositeDisposable.add(Observable.combineLatest(rxGoogleMap.map(), viewModel.selectedAtmObservable,
+                BiFunction<GoogleMap, Optional<AtmNode>, Pair<GoogleMap, Optional<AtmNode>>> { map, selectedAtm ->
+                    Pair(map, selectedAtm)
+                }).subscribe {
+
+            if (it.second.isNotNull()) {
+
+                val atmNode = it.second.safeValue()
+
+                it.first.animateCamera(CameraUpdateFactory.newLatLngZoom(LatLng(atmNode.lat, atmNode.lon),
+                        MainViewModel.targetZoom))
             }
         })
 
-        compositeDisposable.add(viewModel.locationObservable.subscribe {
-            if (it.isNotNull()) {
-                setMyLocation(it.safeValue())
+        compositeDisposable.add(Observable.combineLatest(rxGoogleMap.map(), viewModel.locationObservable,
+                BiFunction<GoogleMap, Optional<Location>, Pair<GoogleMap, Optional<Location>>> { map, location ->
+                    Pair(map, location)
+                }).subscribe {
+
+            if (it.second.isNotNull()) {
+
+                if (!locationSet) {
+
+                    val location = it.second.safeValue()
+
+                    it.first.animateCamera(CameraUpdateFactory.newLatLngZoom(LatLng(location.latitude, location.longitude),
+                            MainViewModel.targetZoom))
+                    locationSet = true
+                }
             }
         })
 
-        compositeDisposable.add(viewModel.locationPermissionObservable.subscribe {
-            map?.isMyLocationEnabled = it
+
+        compositeDisposable.add(Observable.combineLatest(rxGoogleMap.map(), viewModel.locationPermissionObservable,
+                BiFunction<GoogleMap, Boolean, Pair<GoogleMap, Boolean>> { map, enabled ->
+                    Pair(map, enabled)
+                }).subscribe {
+
+            it.first.isMyLocationEnabled = it.second
+
         })
+
     }
 
     @SuppressLint("MissingPermission")
@@ -155,42 +195,7 @@ class GoogleMapsFragment : Fragment(), OnMapReadyCallback, GoogleMap.OnMarkerCli
 
         compositeDisposable.clear()
 
-        map?.isMyLocationEnabled = false
-
     }
-
-    private fun selectAtm(atmNode: AtmNode) {
-        selectedAtm = atmNode
-
-        for (marker in clusterManager.markerCollection.markers) {
-            if (marker.tag != null && marker.tag is AtmNode) {
-                val atm = marker.tag as AtmNode
-                if (atm == selectedAtm) {
-                    marker.setIcon(BitmapDescriptorFactory.fromResource(R.drawable.ic_map_pin_atm_selected))
-                }
-            }
-        }
-    }
-
-    private fun clearSelectedMarker() {
-        selectedAtm = null
-        selectedMarker?.setIcon(BitmapDescriptorFactory.fromResource(R.drawable.ic_map_pin_atm))
-        selectedMarker = null
-
-    }
-
-    private fun setMyLocation(location: Location) {
-        if (!locationSet) {
-            map?.animateCamera(CameraUpdateFactory.newLatLngZoom(LatLng(location.latitude, location.longitude),
-                    MainViewModel.targetZoom))
-            locationSet = true
-        }
-    }
-
-    private fun moveCameraToAtm(atmNode: AtmNode) =
-            map?.animateCamera(CameraUpdateFactory.newLatLngZoom(LatLng(atmNode.lat, atmNode.lon),
-                    MainViewModel.targetZoom))
-
 
     override fun onMarkerClick(marker: Marker): Boolean {
         val res = clusterManager.onMarkerClick(marker)
@@ -198,13 +203,6 @@ class GoogleMapsFragment : Fragment(), OnMapReadyCallback, GoogleMap.OnMarkerCli
         if (!res && marker.tag != null) {
 
             viewModel.selectAtm((marker.tag as AtmNode?)!!)
-
-            if (selectedMarker != null) {
-                selectedMarker!!.setIcon(BitmapDescriptorFactory.fromResource(R.drawable.ic_map_pin_atm))
-            }
-
-            selectedMarker = marker
-            selectedMarker!!.setIcon(BitmapDescriptorFactory.fromResource(R.drawable.ic_map_pin_atm_selected))
             return true
 
         }
@@ -213,41 +211,30 @@ class GoogleMapsFragment : Fragment(), OnMapReadyCallback, GoogleMap.OnMarkerCli
 
 
     override fun onClusterClick(cluster: Cluster<AtmNode>): Boolean {
-
         val builder = LatLngBounds.builder()
         for (item in cluster.items) {
             builder.include(item.position)
         }
         val bounds = builder.build()
 
-        map?.animateCamera(CameraUpdateFactory.newLatLngBounds(bounds, 100))
+        map.animateCamera(CameraUpdateFactory.newLatLngBounds(bounds, 100))
 
         return true
     }
 
 
-    inner class AtmRenderer internal constructor(context: Context, map: GoogleMap, clusterManager: ClusterManager<AtmNode>) : DefaultClusterRenderer<AtmNode>(context, map, clusterManager) {
-
-        override fun onBeforeClusterItemRendered(item: AtmNode, markerOptions: MarkerOptions) {
-            if (selectedAtm != null && selectedAtm!!.id == item.id) {
-                markerOptions.position(LatLng(item.lat, item.lon))
-                        .icon(BitmapDescriptorFactory.fromResource(R.drawable.ic_map_pin_atm_selected))
-
-            } else {
-                markerOptions.position(LatLng(item.lat, item.lon))
-                        .icon(BitmapDescriptorFactory.fromResource(R.drawable.ic_map_pin_atm))
-            }
-        }
+    inner class AtmRenderer internal constructor(context: Context, map: GoogleMap, clusterManager: ClusterManager<AtmNode>)
+        : DefaultClusterRenderer<AtmNode>(context, map, clusterManager) {
 
         override fun onClusterItemRendered(clusterItem: AtmNode, marker: Marker) {
             marker.tag = clusterItem
             if (clusterItem == selectedAtm) {
-                selectedMarker = marker
+                marker.setIcon(BitmapDescriptorFactory.fromResource(R.drawable.ic_map_pin_atm_selected))
+            } else {
+                marker.setIcon(BitmapDescriptorFactory.fromResource(R.drawable.ic_map_pin_atm))
             }
             super.onClusterItemRendered(clusterItem, marker)
         }
-
-
     }
 
     companion object {

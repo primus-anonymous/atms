@@ -4,4 +4,8 @@
         <item>@string/nav_walk</item>
         <item>@string/nav_drive</item>
     </string-array>
+    <string-array name="map_type_array">
+        <item>@string/map_google</item>
+        <item>@string/map_yandex</item>
+    </string-array>
 </resources>
